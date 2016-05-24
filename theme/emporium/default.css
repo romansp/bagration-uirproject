@@ -1,0 +1,422 @@
+/*
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+*/
+
+/** GLOBAL RESETS **/
+:link,:visited {text-decoration:underline}
+h1,h2,h3,h4,h5,h6,pre,code {font-size:1em;font-weight:400;}
+ul,dl,dt,dd,ol,li,h1,h2,h3,h4,h5,h6,pre,form,body,html,p,blockquote,fieldset,input 
+
+{margin:0; padding:0}
+a img,:link img,:visited img {border:none}
+
+/** GLOBAL SETS **/
+.clear {clear:both;}
+.hidden {display:none;}
+
+body {
+	margin: 0;
+	padding: 0;
+	background: url(images/triangles.png) repeat;
+	font-size: 12px;
+	font-family: "Lucida Grande", "Tahoma", sans-serif;
+	text-align: justify;
+	color: #282400
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin: 0 0 10px 0;
+	color: #333;
+	letter-spacing: -1px;
+}
+
+h1 {font-size: 32px;}
+h2 {font-size: 23px;}
+h3 {font-size: 20px;}
+h4 {font-size: 18px;}
+h5 {font-size: 15px;}
+h6 {font-size: 12px;}
+
+p, ul, ol {
+	margin: 0 0 7px 0;
+	text-align: justify;
+	line-height: 21px;
+}
+
+ul, ol {
+	margin: 0 0 20px 25px;
+}
+
+code {background:#f9f9f9;}
+pre {
+	padding:15px;
+	background:#f9f9f9;
+	border:1px solid #eee;
+	margin:0 0 20px 0;
+}
+pre code {background:none;}
+blockquote {font-style:italic;color:#666;line-height:21px;padding-bottom: 10px;}
+li ul, li ol {margin: 0 0 0 25px;}
+
+a:link, a:visited {
+	color: #5c5c5c;
+}
+
+a:hover, a:active {
+	color: black;
+	text-decoration: underline;
+}
+
+img {
+	border: none;
+}
+
+img.left {
+	float: left;
+	margin-right: 15px;
+}
+
+img.right {
+	float: right;
+	margin-left: 15px;
+}
+
+/* Form */
+
+form {
+	margin:0 0 20px 0;
+}
+
+fieldset {
+	border: none;
+}
+
+legend {
+	display: none;
+}
+
+input, textarea, select {
+	font-family: Georgia, "Times New Roman", Times, serif;
+	font-size: 12px;
+	color: #333333;
+}
+
+#wrapper {
+	margin: 0;
+	padding: 0;
+}
+
+/* Header */
+
+#header {
+	width: 880px;
+	margin: 0 auto;
+	height: 60px;
+	border: 10px #FFFFFF solid;
+}
+
+/* Menu */
+
+#menu {
+	float: left;
+	width: 880px;
+	height: 58px;
+	background: url(images/img08.jpg) repeat left top;
+}
+
+#menu ul {
+	margin: 0;
+	padding: 13px 0 0 5px;
+	list-style: none;
+	line-height: normal;
+}
+
+#menu li {
+	float: left;
+	text-align: center;
+}
+
+#menu a {
+	display: block;
+	padding: 5px 10px;
+	margin: 0 10px;
+	text-decoration: none;
+	text-transform: uppercase;
+	font-size: 12px;
+	color: #b49292;
+	line-height:25px;
+}
+
+#menu a:hover, #menu li.current a { 
+	color: #e6c1c1;
+	text-decoration: none;
+	background:transparent url(images/img09.gif) repeat left top;
+	border-radius: 12px;
+	-moz-border-radius: 12px;
+	-khtml-border-radius: 12px;
+	-webkit-border-radius: 12px;
+}
+
+#menu li.current > a { font-weight:800; }
+#menu li + li { 
+	border-left-color: rgb(87, 87, 87);
+	border-left-style: solid;
+	border-left-width: 2px;
+}
+
+/* CONTACT FORM */
+
+.contactform {margin:0 0 20px 0;}
+.contactform b {display:block;font-weight:normal;}
+.contactform div {margin:0 0 5px 0;}
+.contactform input.text, .contactform textarea, .contactform select {border:1px 
+
+solid #333;width:250px;padding:4px;font-family:arial;font-size:13px;margin:2px 0 
+
+7px 0;}
+.contactform input.text:focus, .contactform textarea:focus, .contactform 
+
+select:focus {
+border:1px solid #1B75A9;
+}
+.contactform textarea {height:150px;width:350px;}
+.contactform input#contact-submit {
+	border-radius: 8px;
+	-moz-border-radius: 8px;
+	-khtml-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	padding:8px 4px;
+	width:130px;
+	font-weight:bold;
+	border:none;
+	background:#28313A;
+	color:#ccc;
+	}
+.contactform input#contact-submit:hover { color:#fff; }
+.contactform p.contactmsg {padding:4px;border:1px solid 
+
+#ccc;background:#f9f9f9;font-weight:bold;}
+.contactform p.success {color:#00CC33;}
+.contactform p.error {color:#CC0000;}
+.pot {display:none;}
+
+
+/** LOGO */
+
+#logo {
+	width: 880px;
+	height: 130px;
+	margin: 0 auto;
+}
+
+#logo h1, #logo h2 {
+	float: left;
+	margin: 0;
+	padding: 50px 0 0 0px;
+	line-height: normal;
+}
+
+#logo h1 { 
+	font-family: Georgia, "Times New Roman", Times, serif;
+	font-size:40px;
+}
+
+#logo h1 a {
+	text-decoration: none;
+	color: #e6c1c1; 
+}
+
+#logo h1 a:hover { border-bottom:1px; color: #b49292;  }
+
+
+
+/* Page */
+
+#page {
+	width: 880px;
+	margin: 0 auto;
+	background: #FFFFFF;
+	border: 10px #FFFFFF solid;
+}
+
+/* Content */
+
+#content {
+	float: left;
+	width: 620px;
+	border-right: 1px solid #DFE1E0;
+	text-indent:20px;
+}
+
+/* Materials */
+
+.materials {
+	text-align: none;
+	text-indent: 0px;
+}
+
+/* Post */
+
+.post {
+	padding: 0px 20px;
+	margin-bottom: 20px;
+	text-align: justify;
+}
+
+.post .title {
+	margin-bottom: 20px;
+	padding-bottom: 5px;
+	font-size: 32px;
+}
+
+/*.post h1 {
+	width: 520px;
+	padding: 0px 0 0 0px;
+	background: url('images/img08.jpg') no-repeat left top;
+	font-size: 24px;
+	color: #28313A; 
+}*/
+
+.post h2 {
+	width: 520px;
+	padding: 0px 0 0 0px;
+	font-size: 22px;
+	color: #28313A; 
+}
+
+.post .entry {
+}
+
+.post .meta {
+	padding: 15px 15px 30px 0px;
+	font-size: 10px;
+}
+
+.post .meta p {
+	margin: 0;
+	padding-top: 15px;
+	line-height: normal;
+	color: #28313A; 
+}
+
+
+
+/* Sidebar */
+
+#sidebar {
+	float: right;
+	width: 230px;
+}
+
+#sidebar ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+#sidebar li {
+	margin: 0 0 20px 0;
+}
+
+#sidebar li ul {
+	list-style:circle;
+	margin:0 0 0px 25px;
+}
+#sidebar li ul li {
+	margin:0 0 0 0;
+}
+
+#sidebar h2 {
+	padding: 8px 0 0 0px;
+	margin-bottom: 10px;
+	font-size: 20px;
+	color: #000000; 
+}
+
+/* Search */
+
+#search {
+
+}
+
+#search h2 {
+	margin-bottom: 20px;
+}
+
+#s {
+	width: 140px;
+	margin-right: 5px;
+	padding: 3px;
+	border: 1px solid #DFE1E0;
+}
+
+#x {
+	padding: 3px;
+	border: none;
+	background: #0A5688;
+	text-transform: lowercase;
+	font-size: 11px;
+	color: #FFFFFF;
+}
+
+/* Boxes */
+
+.box1 {
+	padding: 20px;
+}
+
+.box2 {
+	color: #BABABA;
+}
+
+.box2 h2 {
+	margin-bottom: 15px;
+	font-size: 16px;
+	color: #FFFFFF;
+}
+
+.box2 ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.box2 a:link, .box2 a:hover, .box2 a:active, .box2 a:visited  {
+	color: #EDEDED;
+}
+
+/* Footer */
+#footer-wrap {
+}
+
+#footer {
+	width: 880px;
+	margin: 0 auto;
+	background: #E5E5E5;
+	border: 10px #FFFFFF solid;
+}
+
+html>body #footer {
+	height: auto;
+}
+
+#footer p {
+	font-size: 11px;
+	line-height: 14px;
+	font-family:arial, sans-serif;
+}
+
+#legal {
+	clear: both;
+	padding-top: 8px;
+	text-align: center;
+	color: #282400;
+}
+
+#legal a {
+	font-weight: normal;
+	color: #5C5C5C;
+	text-decoration: none;
+}

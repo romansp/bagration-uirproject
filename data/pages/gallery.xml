@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<item><pubDate>Sun, 23 Oct 2011 13:42:50 +0300</pubDate><title><![CDATA[Галерея]]></title><url><![CDATA[gallery]]></url><meta><![CDATA[Великая Отечественная война, Багратион, операция, Белорусская операция, операция багратион, галерея, фотографии, карта]]></meta><metad><![CDATA[Галерея фотографий и изображений Операции Багратион.]]></metad><template><![CDATA[template.php]]></template><content><![CDATA[&lt;p&gt;
+	{squareit_gallery_4da212bd6f0f3}&lt;/p&gt;
+&lt;p&gt;
+	{squareit_gallery_4da214ebe0a0b}&lt;/p&gt;
+&lt;p&gt;
+	&lt;i&gt;*для всех карт: красный и оранжевый цвет - наступление советских войск на 1-ом и 2-ом этапах операции; синий и черный - контратаки немецких войск.&lt;/i&gt;&lt;/p&gt;
+&lt;p&gt;
+	{squareit_gallery_4da20ea128397}&lt;/p&gt;
+]]></content><parent><![CDATA[]]></parent><menuOrder><![CDATA[4]]></menuOrder><menu><![CDATA[]]></menu><menuStatus><![CDATA[Y]]></menuStatus><private><![CDATA[]]></private></item>

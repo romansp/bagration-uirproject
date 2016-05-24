@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<channel><item><title><![CDATA[gtranslator]]></title><slug>gtranslator</slug><value><![CDATA[&lt;div id=&quot;google_translate_element&quot;&gt;&lt;/div&gt;&lt;script type=&quot;text/javascript&quot;&gt;function googleTranslateElementInit(){new google.translate.TranslateElement({pageLanguage: &#039;ru&#039;,gaTrack: true,gaId: &#039;UA-19835556-3&#039;},&#039;google_translate_element&#039;);}&lt;/script&gt;&lt;script type=&quot;text/javascript&quot; src=&quot;//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit&quot;&gt;&lt;/script&gt;]]></value></item><item><title><![CDATA[Sidebar]]></title><slug>sidebar</slug><value><![CDATA[&lt;h2&gt;Операция Багратион&lt;/h2&gt;
+&lt;ul style=&quot;list-style-type: disc&quot;&gt;
+    &lt;li&gt;&lt;a href=&quot;/index&quot;&gt;Главная страница&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href=&quot;/steps&quot;&gt;Этапы:&lt;/a&gt;
+        &lt;ul&gt;
+            &lt;li&gt;&lt;a href=&quot;/steps/prepare&quot;&gt;Подготовительный&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;Основной:
+                &lt;ul&gt;
+                    &lt;li&gt;&lt;a href=&quot;/steps/main-first&quot;&gt;Первый&lt;/a&gt;&lt;/li&gt;
+                    &lt;li&gt;&lt;a href=&quot;/steps/main-second&quot;&gt;Второй&lt;/a&gt;&lt;/li&gt;
+                &lt;/ul&gt;
+            &lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;Итоги и значение:
+        &lt;ul&gt;
+            &lt;li&gt;&lt;a href=&quot;/meaning&quot;&gt;Стратегическое значение&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;&lt;a href=&quot;/contribution&quot;&gt;Вклад белорусского народа&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;&lt;a href=&quot;/gallery&quot;&gt;Галерея&lt;/a&gt;&lt;/li&gt; 
+    &lt;li&gt;&lt;a href=&quot;/about&quot;&gt;О проекте&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+]]></value></item></channel>
