@@ -22,6 +22,16 @@
         <script type="text/javascript">$(function() {var offset = $("#fixed").offset();var topPadding = 15;$(window).scroll(function() {if ($(window).scrollTop() > offset.top) {$("#fixed").stop().animate({marginTop: $(window).scrollTop() - offset.top + topPadding});}else {$("#fixed").stop().animate({marginTop: 0});};});});</script>
         <?php get_header(false); ?>
         <meta name="robots" content="index, follow" />
+        <script type="text/javascript">
+        var appInsights=window.appInsights||function(config){
+            function r(config){t[config]=function(){var i=arguments;t.queue.push(function(){t[config].apply(t,i)})}}var t={config:config},u=document,e=window,o="script",s=u.createElement(o),i,f;for(s.src=config.url||"//az416426.vo.msecnd.net/scripts/a/ai.0.js",u.getElementsByTagName(o)[0].parentNode.appendChild(s),t.cookie=u.cookie,t.queue=[],i=["Event","Exception","Metric","PageView","Trace"];i.length;)r("track"+i.pop());return r("setAuthenticatedUserContext"),r("clearAuthenticatedUserContext"),config.disableExceptionTracking||(i="onerror",r("_"+i),f=e[i],e[i]=function(config,r,u,e,o){var s=f&&f(config,r,u,e,o);return s!==!0&&t["_"+i](config,r,u,e,o),s}),t
+        }({
+            instrumentationKey:"4dfc551d-4e50-4d95-ba6d-a2b75ee69e93"
+        });
+        
+        window.appInsights=appInsights;
+        appInsights.trackPageView();
+        </script>
         <script type="text/javascript"> var _gaq = _gaq || [];_gaq.push(['_setAccount', 'UA-19835556-3']);_gaq.push(['_trackPageview']);(function() {var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);})();</script>
     </head>
     <body id="<?php get_page_slug(); ?>" >
