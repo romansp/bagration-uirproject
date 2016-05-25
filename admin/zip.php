@@ -8,12 +8,13 @@
  * @subpackage Backups
  */
 
-	// Setup inclusions
-	$load['plugin'] = true;
-	
+// Setup inclusions
+$load['plugin'] = true;
 
-	// Include common.php
-	include('inc/common.php');
+
+// Include common.php
+include('inc/common.php');
+login_cookie_check();
 
 // check validity of request
 if ($_REQUEST['s'] === $SESSIONHASH) {
@@ -29,7 +30,7 @@ if ($_REQUEST['s'] === $SESSIONHASH) {
 
 	$saved_zip_file = GSBACKUPSPATH.'zip/'. $timestamp .'_archive.zip';	
 	
-	$sourcePath = GSROOTPATH;
+	$sourcePath = str_replace('/', DIRECTORY_SEPARATOR, GSROOTPATH);
 	if (!class_exists ( 'ZipArchive' , false)) {
 		include('inc/ZipArchive.php');
 	}
@@ -38,7 +39,10 @@ if ($_REQUEST['s'] === $SESSIONHASH) {
 		$archiv = new ZipArchive();
 		$archiv->open($saved_zip_file, ZipArchive::CREATE);
 		$dirIter = new RecursiveDirectoryIterator($sourcePath);
-		$iter = new RecursiveIteratorIterator($dirIter);
+		$iter = new RecursiveIteratorIterator($dirIter,
+			         	RecursiveIteratorIterator::LEAVES_ONLY,
+			        	RecursiveIteratorIterator::CATCH_GET_CHILD
+			    	);
 		
 		foreach($iter as $element) {
 		    /* @var $element SplFileInfo */

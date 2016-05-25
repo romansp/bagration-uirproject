@@ -13,35 +13,72 @@ $live_plugins     = array();  // used for enablie/disable functions
 $GS_scripts       = array();  // used for queing Scripts
 $GS_styles        = array();  // used for queing Styles
 
-// constants 
+// constants
+// asseturl is scheme-less ://url if GSASSETSCHEMES is not true
+$ASSETURL = getDef('GSASSETSCHEMES',true) !==true ? str_replace(parse_url($SITEURL, PHP_URL_SCHEME).':', '', $SITEURL) : $SITEURL;
 
-define('GSFRONT',1);
-define('GSBACK',2);
-define('GSBOTH',3);
-if ($SITEURL==""){
-	$SITEURL=suggest_site_path();
-}
+if (!defined('GSFRONT')) define('GSFRONT',1);
+if (!defined('GSBACK'))  define('GSBACK',2);
+if (!defined('GSBOTH'))  define('GSBOTH',3);
+
+$GS_script_assets = array(); // defines asset scripts
+$GS_style_assets  = array();  // defines asset styles
+
+$GS_asset_objects = array(); // holds asset js object names
+$GS_asset_objects['jquery']    = 'jQuery';
+$GS_asset_objects['jquery-ui'] = 'jQuery.ui'; 
+
+// jquery
+$jquery_ver    = '1.7.1';
+$jquery_ui_ver = '1.8.17';
+
+$GS_script_assets['jquery']['cdn']['url']      = '//ajax.googleapis.com/ajax/libs/jquery/'.$jquery_ver.'/jquery.min.js';
+$GS_script_assets['jquery']['cdn']['ver']      = $jquery_ver;
+
+$GS_script_assets['jquery']['local']['url']    = $ASSETURL.$GSADMIN.'/template/js/jquery.min.js';
+$GS_script_assets['jquery']['local']['ver']    = $jquery_ver;
+
+// jquery-ui
+$GS_script_assets['jquery-ui']['cdn']['url']   = '//ajax.googleapis.com/ajax/libs/jqueryui/'.$jquery_ui_ver.'/jquery-ui.min.js';
+$GS_script_assets['jquery-ui']['cdn']['ver']   = $jquery_ui_ver;
+
+$GS_script_assets['jquery-ui']['local']['url'] = $ASSETURL.$GSADMIN.'/template/js/jquery-ui.min.js';
+$GS_script_assets['jquery-ui']['local']['ver'] = $jquery_ui_ver;
+
+// misc
+$GS_script_assets['fancybox']['local']['url']  = $ASSETURL.$GSADMIN.'/template/js/fancybox/jquery.fancybox.pack.js';
+$GS_script_assets['fancybox']['local']['ver']  = '2.0.4';
+
+$GS_style_assets['fancybox']['local']['url']   =  $ASSETURL.$GSADMIN.'/template/js/fancybox/jquery.fancybox.css';
+$GS_style_assets['fancybox']['local']['ver']   = '2.0.4';
+
+// scrolltofixed
+$GS_script_assets['scrolltofixed']['local']['url']   =  $ASSETURL.$GSADMIN.'/template/js/jquery-scrolltofixed.js';
+$GS_script_assets['scrolltofixed']['local']['ver']   = '0.0.1';
 
 /**
  * Register shared javascript/css scripts for loading into the header
  */
-if (!defined('GSNOCDN')){
-	register_script('jquery', '//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js', '1.7.1', FALSE);
-	register_script('jquery-ui','//ajax.googleapis.com/ajax/libs/jqueryui/1.8.17/jquery-ui.min.js','1.8.17',FALSE);
+if (!getDef('GSNOCDN',true)){
+	register_script('jquery', $GS_script_assets['jquery']['cdn']['url'], $GS_script_assets['jquery']['cdn']['ver'], FALSE);
+	register_script('jquery-ui',$GS_script_assets['jquery-ui']['cdn']['url'],$GS_script_assets['jquery-ui']['cdn']['ver'],FALSE);
 } else {
-	register_script('jquery', $SITEURL.$GSADMIN.'/template/js/jquery.min.js', '1.7.1', FALSE);
-	register_script('jquery-ui', $SITEURL.$GSADMIN.'/template/js/jquery-ui.min.js', '1.8.17', FALSE);
+	register_script('jquery', $GS_script_assets['jquery']['local']['url'], $GS_script_assets['jquery']['local']['ver'], FALSE);
+	register_script('jquery-ui',$GS_script_assets['jquery-ui']['local']['url'],$GS_script_assets['jquery-ui']['local']['ver'],FALSE);
 }
-register_script('fancybox', $SITEURL.$GSADMIN.'/template/js/fancybox/jquery.fancybox.pack.js', '2.0.4',FALSE);
-register_style('fancybox-css', $SITEURL.$GSADMIN.'/template/js/fancybox/jquery.fancybox.css', '2.0.4', 'screen');
+register_script('fancybox', $GS_script_assets['fancybox']['local']['url'], $GS_script_assets['fancybox']['local']['ver'],FALSE);
+register_style('fancybox-css', $GS_style_assets['fancybox']['local']['url'], $GS_style_assets['fancybox']['local']['ver'], 'screen');
+
+register_script('scrolltofixed', $GS_script_assets['scrolltofixed']['local']['url'], $GS_script_assets['scrolltofixed']['local']['ver'],FALSE);
 
 /**
  * Queue our scripts and styles for the backend
  */
 queue_script('jquery', GSBACK);
+queue_script('jquery-ui', GSBACK);
 queue_script('fancybox', GSBACK);
-queue_style('fancybox-css',GSBACK);
 
+queue_style('fancybox-css',GSBACK);
 
 /**
  * Include any plugins, depending on where the referring 
@@ -61,31 +98,28 @@ if (!file_exists(GSDATAOTHERPATH."plugins.xml")){
 
 read_pluginsxml();        // get the live plugins into $live_plugins array
 
-
-create_pluginsxml();      // check that plugins have not been removed or added to the directory
+if(!is_frontend()) create_pluginsxml();      // check that plugins have not been removed or added to the directory
 
 // load each of the plugins
 foreach ($live_plugins as $file=>$en) {
   $pluginsLoaded=true;
   # debugLog("plugin: $file" . " exists: " . file_exists(GSPLUGINPATH . $file) ." enabled: " . $en); 
   if ($en=='true' && file_exists(GSPLUGINPATH . $file)){
-  	require_once(GSPLUGINPATH . $file);
+	require_once(GSPLUGINPATH . $file);
   } else {
-    if(!is_frontend()){
-      $apiback = get_api_details('plugin', $file);
-      $response = json_decode($apiback);
-      if ($response and $response->status == 'successful') {
-        register_plugin( pathinfo_filename($file), $file, 'disabled', $response->owner, '', 'Disabled Plugin', '', '');
-      } else {
-        register_plugin( pathinfo_filename($file), $file, 'disabled', 'Unknown', '', 'Disabled Plugin', '', '');
-      }
-    } else {
-        register_plugin( pathinfo_filename($file), $file, 'disabled', 'Unknown', '', 'Disabled Plugin', '', '');
-    }  
+	if(!is_frontend() and get_filename_id() == 'plugins'){
+	  $apiback = get_api_details('plugin', $file, getDef('GSNOPLUGINCHECK',true));
+	  $response = json_decode($apiback);
+	  if ($response and $response->status == 'successful') {
+		register_plugin( pathinfo_filename($file), $file, 'disabled', $response->owner, '', i18n_r('PLUGIN_DISABLED'), '', '');
+	  } else {
+		register_plugin( pathinfo_filename($file), $file, 'disabled', 'Unknown', '', i18n_r('PLUGIN_DISABLED'), '', '');
+	  }
+	} else {
+		register_plugin( pathinfo_filename($file), $file, 'disabled', 'Unknown', '', i18n_r('PLUGIN_DISABLED'), '', '');
+	}  
   }
 }
-
-create_pluginsxml();      // check that plugins have not been removed or added to the directory
 
 /**
  * change_plugin
@@ -96,15 +130,26 @@ create_pluginsxml();      // check that plugins have not been removed or added t
  * @uses $live_plugins
  *
  * @param $name
+ * @param $active bool default=null, sets plugin active | inactive else toggle
  */
-function change_plugin($name){
+function change_plugin($name,$active=null){
   global $live_plugins;   
 	 if (isset($live_plugins[$name])){
-	  if ($live_plugins[$name]=="true"){
-	    $live_plugins[$name]="false";
-	  } else {
-	    $live_plugins[$name]="true";
+	
+	  // set plugin active | inactive
+	  if(isset($active) and is_bool($active)) {
+		$live_plugins[$name] = $active ? 'true' : 'false';	  		
+		create_pluginsxml(true);
+		return;
 	  }
+
+	  // else we toggle
+	  if ($live_plugins[$name]=="true"){
+		$live_plugins[$name]="false";
+	  } else {
+		$live_plugins[$name]="true";
+	  }
+
 	  create_pluginsxml(true);
 	}
 }
@@ -123,13 +168,14 @@ function read_pluginsxml(){
   global $live_plugins;   
    
   $data = getXML(GSDATAOTHERPATH . "plugins.xml");
-  $componentsec = $data->item;
-  if (count($componentsec) != 0) {
-    foreach ($componentsec as $component) {
-      $live_plugins[(string)$component->plugin]=(string)$component->enabled;
-    }
-  }
-
+  if($data){
+  	$componentsec = $data->item;
+	  if (count($componentsec) != 0) {
+			foreach ($componentsec as $component) {
+			  $live_plugins[trim((string)$component->plugin)]=trim((string)$component->enabled);
+			}
+	  }
+	}
 }
 
 
@@ -147,36 +193,37 @@ function read_pluginsxml(){
 function create_pluginsxml($force=false){
   global $live_plugins;   
   if (file_exists(GSPLUGINPATH)){
-    $pluginfiles = getFiles(GSPLUGINPATH);
+	$pluginfiles = getFiles(GSPLUGINPATH);
   }
   $phpfiles = array();
   foreach ($pluginfiles as $fi) {
-    if (lowercase(pathinfo($fi, PATHINFO_EXTENSION))=='php') {
-      $phpfiles[] = $fi;
-    }
+	if (lowercase(pathinfo($fi, PATHINFO_EXTENSION))=='php') {
+	  $phpfiles[] = $fi;
+	}
   }
   if (!$force) {
-    $livekeys = array_keys($live_plugins);
-    if (count(array_diff($livekeys, $phpfiles))>0 || count(array_diff($phpfiles, $livekeys))>0) {
-      $force = true;
-    }
+	$livekeys = array_keys($live_plugins);
+	if (count(array_diff($livekeys, $phpfiles))>0 || count(array_diff($phpfiles, $livekeys))>0) {
+	  $force = true;
+	}
   }
   if ($force) {
-    $xml = @new SimpleXMLExtended('<?xml version="1.0" encoding="UTF-8"?><channel></channel>'); 
-    foreach ($phpfiles as $fi) {
-      $plugins = $xml->addChild('item');  
-      $p_note = $plugins->addChild('plugin');
-      $p_note->addCData($fi);
-      $p_note = $plugins->addChild('enabled');
-      if (isset($live_plugins[(string)$fi])){
-        $p_note->addCData($live_plugins[(string)$fi]);     
-      } else {
-         $p_note->addCData('true'); 
-      } 
-    }
-    XMLsave($xml, GSDATAOTHERPATH."plugins.xml");
+	$xml = @new SimpleXMLExtended('<?xml version="1.0" encoding="UTF-8"?><channel></channel>'); 
+	foreach ($phpfiles as $fi) {
+	  $plugins = $xml->addChild('item');  
+	  $p_note = $plugins->addChild('plugin');
+	  $p_note->addCData($fi);
+	  $p_note = $plugins->addChild('enabled');
+	  if (isset($live_plugins[(string)$fi])){
+		$p_note->addCData($live_plugins[(string)$fi]);     
+	  } else {
+		 $p_note->addCData('false'); 
+	  } 
+	}
+	XMLsave($xml, GSDATAOTHERPATH."plugins.xml");  
+	read_pluginsxml();
   }
-  read_pluginsxml();
+
 }
 
 
@@ -197,14 +244,14 @@ function add_action($hook_name, $added_function, $args = array()) {
   
 	$bt = debug_backtrace();
 	$shift=count($bt) - 4;	// plugin name should be  
-  	$caller = array_shift($bt);
+	$caller = array_shift($bt);
 	$realPathName=pathinfo_filename($caller['file']);
 	$realLineNumber=$caller['line'];
 	while ($shift > 0) {
 		 $caller = array_shift($bt);
 		 $shift--;
 	}
-  	$pathName= pathinfo_filename($caller['file']);
+	$pathName= pathinfo_filename($caller['file']);
 
 	if ((isset ($live_plugins[$pathName.'.php']) && $live_plugins[$pathName.'.php']=='true') || $shift<0 ){
 		if ($realPathName!=$pathName) {
@@ -219,7 +266,7 @@ function add_action($hook_name, $added_function, $args = array()) {
 			'function' => $added_function,
 			'args' => (array) $args,
 			'file' => $pathName.'.php',
-	    'line' => $caller['line']
+		'line' => $caller['line']
 		);
 	  } 
 }
@@ -257,10 +304,10 @@ function exec_action($a) {
 function createSideMenu($id, $txt, $action=null, $always=true){
   $current = false;
   if (isset($_GET['id']) && $_GET['id'] == $id && (!$action || isset($_GET[$action]))) {
-    $current = true;
+	$current = true;
   }
   if ($always || $current) {
-    echo '<li id="sb_'.$id.'"><a href="load.php?id='.$id.($action ? '&amp;'.$action : '').'" '.($current ? 'class="current"' : '').' >'.$txt.'</a></li>';
+	echo '<li id="sb_'.$id.'" class="plugin_sb"><a href="load.php?id='.$id.($action ? '&amp;'.$action : '').'" '.($current ? 'class="current"' : '').' >'.$txt.'</a></li>';
   }
 }
 
@@ -280,10 +327,10 @@ function createNavTab($tabname, $id, $txt, $action=null) {
   global $plugin_info;
   $current = false;
   if (basename($_SERVER['PHP_SELF']) == 'load.php') {
-    $plugin_id = @$_GET['id'];
-    if ($plugin_info[$plugin_id]['page_type'] == $tabname) $current = true;
+	$plugin_id = @$_GET['id'];
+	if ($plugin_info[$plugin_id]['page_type'] == $tabname) $current = true;
   }
-  echo '<li id="nav_'.$id.'"><a href="load.php?id='.$id.($action ? '&amp;'.$action : '').'" '.($current ? 'class="current"' : '').' >'.$txt.'</a></li>';
+  echo '<li id="nav_'.$id.'" class="plugin_tab"><a href="load.php?id='.$id.($action ? '&amp;'.$action : '').'" '.($current ? 'class="current"' : '').' >'.$txt.'</a></li>';
 }
 
 /**
@@ -333,10 +380,10 @@ function add_filter($filter_name, $added_function) {
   $bt = debug_backtrace();
   $caller = array_shift($bt);
   $pathName= pathinfo_filename($caller['file']);
-  	$filters[] = array(
-  		'filter' => $filter_name,
-  		'function' => $added_function
-  	);
+	$filters[] = array(
+		'filter' => $filter_name,
+		'function' => $added_function
+	);
 }
 
 /**
@@ -456,11 +503,13 @@ function get_scripts_frontend($footer=FALSE){
 		if ($script['where'] & GSFRONT ){
 			if (!$footer){
 				if ($script['load']==TRUE && $script['in_footer']==FALSE ){
-					 echo '<script src="'.$script['src'].'?v='.$script['ver'].'"></script>';
+					 echo "\t<script src=\"".$script['src'].'?v='.$script['ver']."\"></script>\n";
+					 cdn_fallback($script);		 					 
 				}
 			} else {
 				if ($script['load']==TRUE && $script['in_footer']==TRUE ){
-					 echo '<script src="'.$script['src'].'?v='.$script['ver'].'"></script>';
+					 echo "\t<script src=\"".$script['src'].'?v='.$script['ver']."\"></script>\n";
+					 cdn_fallback($script);		 					 
 				}
 			}
 		}
@@ -482,19 +531,39 @@ function get_scripts_backend($footer=FALSE){
 	if (!$footer){
 		get_styles_backend();
 	}
+
+	# debugLog($GS_scripts);
 	foreach ($GS_scripts as $script){
 		if ($script['where'] & GSBACK ){	
 			if (!$footer){
 				if ($script['load']==TRUE && $script['in_footer']==FALSE ){
-					 echo '<script src="'.$script['src'].'?v='.$script['ver'].'"></script>';
+					 echo "\t<script src=\"".$script['src'].'?v='.$script['ver']."\"></script>\n";
+					 cdn_fallback($script);		 
 				}
 			} else {
 				if ($script['load']==TRUE && $script['in_footer']==TRUE ){
-					 echo '<script src="'.$script['src'].'?v='.$script['ver'].'"></script>';
+					 echo "\t<script src=\"".$script['src'].'?v='.$script['ver']."\"></script>\n";
+					 cdn_fallback($script);		 					 
 				}
 			}
 		}
 	}
+}
+
+/**
+ * Add javascript for cdn fallback to local
+ * get_scripts_backend helper
+ * @param  array $script gsscript array
+ */
+function cdn_fallback($script){
+	GLOBAL $GS_script_assets, $GS_asset_objects;	
+	if (getDef('GSNOCDN',true)) return; // if nocdn skip
+	if($script['name'] == 'jquery' || $script['name'] == 'jquery-ui'){
+		echo "\t<script>";
+		echo "window.".$GS_asset_objects[$script['name']]." || ";
+		echo "document.write('<!-- CDN FALLING BACK --><script src=\"".$GS_script_assets[$script['name']]['local']['url'].'?v='.$GS_script_assets[$script['name']]['local']['ver']."\"><\/script>');";
+		echo "</script>\n";
+	}					
 }
 
 /**
@@ -571,7 +640,7 @@ function get_styles_frontend(){
 	foreach ($GS_styles as $style){
 		if ($style['where'] & GSFRONT ){
 				if ($style['load']==TRUE){
-				 echo '<link href="'.$style['src'].'?v='.$style['ver'].'" rel="stylesheet" media="'.$style['media'].'">';
+					echo "\t".'<link href="'.$style['src'].'?v='.$style['ver'].'" rel="stylesheet" media="'.$style['media']."\">\n";
 				}
 		}
 	}
@@ -590,7 +659,7 @@ function get_styles_backend(){
 	foreach ($GS_styles as $style){
 		if ($style['where'] & GSBACK ){
 				if ($style['load']==TRUE){
-				 echo '<link href="'.$style['src'].'?v='.$style['ver'].'" rel="stylesheet" media="'.$style['media'].'">';
+					echo "\t".'<link href="'.$style['src'].'?v='.$style['ver'].'" rel="stylesheet" media="'.$style['media']."\">\n";
 				}
 		}
 	}

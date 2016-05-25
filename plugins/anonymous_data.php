@@ -22,12 +22,13 @@ register_plugin(
 	'Chris Cagle',
 	'http://get-simple.info/',
 	i18n_r($thisfile_anony.'/ANONY_DESC'),
-	'plugin',
+	$thisfile_anony,
 	'gs_anonymousdata'
 );
 
 # activate hooks
 add_action('plugins-sidebar','createSideMenu',array($thisfile_anony,i18n_r($thisfile_anony.'/ANONY_TITLE'))); 
+add_action($thisfile_anony.'-sidebar','createSideMenu',array("",i18n_r("CANCEL"))); 
 
 if ( ! function_exists('get_tld_from_url')){ 
 	function get_tld_from_url( $url ){
@@ -58,6 +59,8 @@ function gs_anonymousdata() {
 	if(isset($_POST['preview'])) {
 		global $LANG, $TIMEZONE, $SITEURL, $live_plugins, $thisfile_anony;
 		
+		$missing_modules = array();
+		
 		$php_modules = get_loaded_extensions();
 		if (! in_arrayi('curl', $php_modules) ) {
 			$missing_modules[] = 'curl';
@@ -79,7 +82,9 @@ function gs_anonymousdata() {
 				$missing_modules[] = 'mod_rewrite';
 			}
 		}
-		
+		$lastModified = @filemtime(GSDATAOTHERPATH .'.htaccess');
+		if($lastModified == NULL)
+		    $lastModified = filemtime(utf8_decode(GSDATAOTHERPATH .'.htaccess'));
 		$preview_data = @new SimpleXMLExtended('<data></data>');
 		$preview_data->addChild('submission_date', date('c'));
 		$preview_data->addChild('getsimple_version', get_site_version(false));
@@ -95,7 +100,7 @@ function gs_anonymousdata() {
 		$preview_data->addChild('number_backups', count(getFiles(GSBACKUPSPATH.'zip')));
 		$preview_data->addChild('number_users', folder_items(GSUSERSPATH)-1);
 		$preview_data->addChild('domain_tld', get_tld_from_url($SITEURL));
-		$preview_data->addChild('install_date', date('m-d-Y', filemtime(GSDATAOTHERPATH .'.htaccess')));
+		$preview_data->addChild('install_date', date('m-d-Y', $lastModified));
 		$preview_data->addChild('category', $_POST['category']);
 		$preview_data->addChild('link_back', $_POST['link_back']);
 		XMLsave($preview_data, GSDATAOTHERPATH . 'anonymous_data.xml');
@@ -142,8 +147,8 @@ function gs_anonymousdata() {
 		
 		<?php if(isset($preview_data)) { ?>
 			<p><?php i18n($thisfile_anony.'/ANONY_CONFIRM'); ?></p>
-			<pre><code><?php echo htmlentities(formatXmlString(file_get_contents(GSDATAOTHERPATH . 'anonymous_data.xml')));?></code></pre>
-			<p class="submit"><br /><input type="submit" class="submit" value="<?php i18n($thisfile_anony.'/ANONY_SEND_BTN'); ?>" name="send" /> &nbsp;&nbsp;<?php i18n('OR'); ?>&nbsp;&nbsp; <a class="cancel" href="plugins.php?cancel"><?php i18n('CANCEL'); ?></p>		
+			<div class="unformatted"><code><?php echo htmlentities(formatXmlString(file_get_contents(GSDATAOTHERPATH . 'anonymous_data.xml')));?></code></div>
+			<p class="submit"><br /><input type="submit" class="submit" value="<?php i18n($thisfile_anony.'/ANONY_SEND_BTN'); ?>" name="send" /> &nbsp;&nbsp;<?php i18n('OR'); ?>&nbsp;&nbsp; <a class="cancel" href="plugins.php?cancel"><?php i18n('CANCEL'); ?></a></p>		
 		<?php } else { ?> 
 			<p><?php i18n($thisfile_anony.'/ANONY_PARAGRAPH'); ?></p>
 			<p><?php i18n($thisfile_anony.'/ANONY_PARAGRAPH2'); ?></p>
@@ -190,7 +195,7 @@ function gs_anonymousdata() {
 			</p>
 			<p class="clearfix" ><label><?php i18n($thisfile_anony.'/ANONY_LINK'); ?></label><select class="text" name="link_back"><option></option><option value="yes" ><?php i18n($thisfile_anony.'/ANONY_YES'); ?></option><option value="no" ><?php i18n($thisfile_anony.'/ANONY_NO'); ?></option></select></p>
 			<p style="color:#cc0000;font-size:11px;" >* <?php i18n($thisfile_anony.'/ANONY_DISCLAIMER'); ?></p>
-			<p class="submit"><br /><input type="submit" class="submit" value="<?php i18n($thisfile_anony.'/ANONY_PREVIEW_BTN'); ?>" name="preview" /> &nbsp;&nbsp;<?php i18n('OR'); ?>&nbsp;&nbsp; <a class="cancel" href="plugins.php?cancel"><?php i18n('CANCEL'); ?></p>
+			<p class="submit"><br /><input type="submit" class="submit" value="<?php i18n($thisfile_anony.'/ANONY_PREVIEW_BTN'); ?>" name="preview" /> &nbsp;&nbsp;<?php i18n('OR'); ?>&nbsp;&nbsp; <a class="cancel" href="plugins.php?cancel"><?php i18n('CANCEL'); ?></a></p>
 		<?php  } ?>
 	</form>
 

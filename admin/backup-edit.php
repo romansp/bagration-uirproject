@@ -19,6 +19,8 @@ if ($_GET['id'] != '') {
 	$file = $id .".bak.xml";
 	$path = GSBACKUPSPATH .'pages/';
 	
+	if(!filepath_is_safe($path.$file,$path)) die();
+
 	$data = getXML($path . $file);
 	$title = htmldecode($data->title);
 	$pubDate = $data->pubDate;
@@ -71,6 +73,7 @@ elseif ($p == 'restore') {
 		restore_bak($id);
 		$existing = GSDATAPAGESPATH . $_GET['new'] .".xml";
 		$bakfile = GSBACKUPSPATH."pages/". $_GET['new'] .".bak.xml";
+		if(!filepath_is_safe($existing,GSDATAPAGESPATH)) die();
 		copy($existing, $bakfile);
 		unlink($existing);
 		redirect("edit.php?id=". $id ."&old=".$_GET['new']."&upd=edit-success&type=restore");
@@ -95,7 +98,13 @@ get_template('header', cl($SITENAME).' &raquo; '. i18n_r('BAK_MANAGEMENT').' &ra
 		<h3 class="floated"><?php i18n('BACKUP_OF');?> &lsquo;<em><?php echo $url; ?></em>&rsquo;</h3>
 		
 		<div class="edit-nav" >
-			 <a href="backup-edit.php?p=restore&amp;id=<?php echo $id; ?>&amp;nonce=<?php echo get_nonce("restore", "backup-edit.php"); ?>" accesskey="<?php echo find_accesskey(i18n_r('ASK_RESTORE'));?>" ><?php i18n('ASK_RESTORE');?></a> <a href="backup-edit.php?p=delete&amp;id=<?php echo $id; ?>&amp;nonce=<?php echo get_nonce("delete", "backup-edit.php"); ?>" title="<?php i18n('DELETEPAGE_TITLE'); ?>: <?php echo $title; ?>?" id="delback" accesskey="<?php echo find_accesskey(i18n_r('ASK_DELETE'));?>" class="delconfirm noajax" ><?php i18n('ASK_DELETE');?></a>
+			 <a href="backup-edit.php?p=restore&amp;id=<?php echo var_out($id); ?>&amp;nonce=<?php echo get_nonce("restore", "backup-edit.php"); ?>" 
+			 	accesskey="<?php echo find_accesskey(i18n_r('ASK_RESTORE'));?>" ><?php i18n('ASK_RESTORE');?></a> 
+			 <a href="backup-edit.php?p=delete&amp;id=<?php echo var_out($id); ?>&amp;nonce=<?php echo get_nonce("delete", "backup-edit.php"); ?>" 
+			 	title="<?php i18n('DELETEPAGE_TITLE'); ?>: <?php echo var_out($title); ?>?" 
+			 	id="delback" 
+			 	accesskey="<?php echo find_accesskey(i18n_r('ASK_DELETE'));?>" 
+			 	class="delconfirm noajax" ><?php i18n('ASK_DELETE');?></a>
 			<div class="clear"></div>
 		</div>
 		
@@ -120,12 +129,10 @@ get_template('header', cl($SITENAME).' &raquo; '. i18n_r('BAK_MANAGEMENT').' &ra
 
 		</div>
 		
-		<?php if ($HTMLEDITOR != '') { 
-			if (defined('GSEDITORHEIGHT')) { $EDHEIGHT = GSEDITORHEIGHT .'px'; } else {	$EDHEIGHT = '500px'; }
-			if (defined('GSEDITORLANG')) { $EDLANG = GSEDITORLANG; } else {	$EDLANG = 'en'; }
-		?>
-		<script type="text/javascript" src="template/js/ckeditor/ckeditor.js"></script>
+		<?php if ($HTMLEDITOR != '') { ?>
+		<script type="text/javascript" src="template/js/ckeditor/ckeditor.js<?php echo getDef("GSCKETSTAMP",true) ? "?t=".getDef("GSCKETSTAMP") : ""; ?>"></script>
 		<script type="text/javascript">
+		<?php if(getDef("GSCKETSTAMP",true)) echo "CKEDITOR.timestamp = '".getDef("GSCKETSTAMP") . "';\n"; ?>
 		var editor = CKEDITOR.replace( 'codetext', {
 			skin : 'getsimple',
 			language : '<?php echo $EDLANG; ?>',
@@ -135,8 +142,8 @@ get_template('header', cl($SITENAME).' &raquo; '. i18n_r('BAK_MANAGEMENT').' &ra
 			?>
 			contentsCss: '<?php echo $fullpath; ?>theme/<?php echo $TEMPLATE; ?>/editor.css',
 			<?php } ?>
-			entities : true,
-			uiColor : '#FFFFFF',
+			entities : false,
+			// uiColor : '#FFFFFF',
 			height: '<?php echo $EDHEIGHT; ?>',
 			baseHref : '<?php echo $SITEURL; ?>',
 			toolbar : [['Source']],

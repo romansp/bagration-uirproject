@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Display Available Themes
  * 
@@ -11,6 +12,17 @@
 
 // Include common.php
 include('common.php');
+login_cookie_check();
+
+// JSON output of pages for ckeditor select
+if(isset($_REQUEST['list_pages_json'])) {
+	include_once('plugin_functions.php');	
+	include_once('caching_functions.php');
+	getPagesXmlValues();
+	header('Content-type: application/json');	
+	echo list_pages_json();
+	die();
+}
 
 // Make sure register globals don't make this hackable again.
 if (isset($TEMPLATE)) unset($TEMPLATE);
@@ -32,6 +44,9 @@ if (isset($TEMPLATE)) {
         $TEMPLATE_FILE = ''; $template = ''; $theme_templates = '';
 
         if ($template == '') { $template = 'template.php'; }
+
+		if(!filepath_is_safe(GSTHEMESPATH . $TEMPLATE,GSTHEMESPATH)) die();
+
         $templates = directoryToArray(GSTHEMESPATH . $TEMPLATE . '/', true);
 		$allowed_extensions=array('php','css','js','html','htm');
         $theme_templates .= '<select class="text" id="theme_files" style="width:425px;" name="f" >';

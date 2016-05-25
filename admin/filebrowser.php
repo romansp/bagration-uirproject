@@ -15,19 +15,20 @@ include('inc/common.php');
 login_cookie_check();
 
 $filesSorted=null;$dirsSorted=null;
+
 $path = (isset($_GET['path'])) ? "../data/uploads/".$_GET['path'] : "../data/uploads/";
 $subPath = (isset($_GET['path'])) ? $_GET['path'] : "";
-$returnid = (isset($_GET['returnid'])) ? $_GET['returnid'] : "";
-$func = (isset($_GET['func'])) ? $_GET['func'] : "";
+if(!path_is_safe($path,GSDATAUPLOADPATH)) die();
+$returnid = isset($_GET['returnid']) ? var_out($_GET['returnid']) : "";
+$func = (isset($_GET['func'])) ? var_out($_GET['func']) : "";
 $path = tsl($path);
 // check if host uses Linux (used for displaying permissions
 $isUnixHost = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? false : true);
-$CKEditorFuncNum = $_GET['CKEditorFuncNum'];
+$CKEditorFuncNum = isset($_GET['CKEditorFuncNum']) ? var_out($_GET['CKEditorFuncNum']) : '';
 $sitepath = suggest_site_path();
 $fullPath = $sitepath . "data/uploads/";
-$type = $_GET['type'];
+$type = isset($_GET['type']) ? var_out($_GET['type']) : '';
 
-if(!defined('IN_GS')){ die('you cannot load this page directly.'); }
 global $LANG;
 $LANG_header = preg_replace('/(?:(?<=([a-z]{2}))).*/', '', $LANG);
 ?>
@@ -51,7 +52,6 @@ $LANG_header = preg_replace('/(?:(?<=([a-z]{2}))).*/', '', $LANG);
             }
         <?php 
 			if (isset($_GET['func'])){
-			$func = @$_GET['func'];
 		?>
 				if(window.opener){
 					if(typeof window.opener.<?php echo $func; ?> == 'function') {
@@ -98,7 +98,7 @@ $LANG_header = preg_replace('/(?:(?<=([a-z]{2}))).*/', '', $LANG);
 				$filesArray[$count]['type'] = $extention;
 				clearstatcache();
 				$ss = @stat($path . $file);
-				$filesArray[$count]['date'] = @date('M j, Y',$ss['ctime']);
+				$filesArray[$count]['date'] = @date('M j, Y',$ss['mtime']);
 				$filesArray[$count]['size'] = fSize($ss['size']);
 				$totalsize = $totalsize + $ss['size'];
 				$count++;
@@ -180,7 +180,7 @@ $LANG_header = preg_replace('/(?:(?<=([a-z]{2}))).*/', '', $LANG);
 			echo '<td style="width:80px;text-align:right;" ><span>'. $upload['size'] .'</span></td>';
 
 			// get the file permissions.
-			if ($isUnixHost && defined('GSDEBUG') && function_exists('posix_getpwuid')) {
+			if ($isUnixHost && isDebug() && function_exists('posix_getpwuid')) {
 				$filePerms = substr(sprintf('%o', fileperms($path.$upload['name'])), -4);
 				$fileOwner = posix_getpwuid(fileowner($path.$upload['name']));
 				echo '<td style="width:70px;text-align:right;"><span>'.$fileOwner['name'].'/'.$filePerms.'</span></td>';

@@ -33,9 +33,7 @@ if(isset($_POST['submitted'])) {
 		
 		# hash the given password
 		$password = passhash($password);
-    $logFailed = new GS_Logging_Class('failedlogins.log');
-    $logFailed->add('Username',$userid);
-        
+
 		# does this user exist?
 		if (file_exists($user_xml)) {
 
@@ -44,38 +42,40 @@ if(isset($_POST['submitted'])) {
 			$PASSWD = $data->PWD;
 			$USR = strtolower($data->USR);
 
-			
 			# do the username and password match?
 			if ( ($userid == $USR) && ($password == $PASSWD) ) {
 				$authenticated = true;
 			} else {
 				$authenticated = false;
 
-        # add login failure to failed logins log
-        $logFailed->add('Reason','Invalid Password');
-        
+				# add login failure to failed logins log
+				$logFailed = new GS_Logging_Class('failedlogins.log');
+				$logFailed->add('Username',$userid);
+				$logFailed->add('Reason','Invalid Password');
+
 			} # end password match check
 			
 		} else {
 			# user doesnt exist in this system
 			$authenticated = false;
 
-      # add login failure to failed logins log
-      $logFailed->add('Reason','Invalid User');
+			# add login failure to failed logins log
+			$logFailed = new GS_Logging_Class('failedlogins.log');
+			$logFailed->add('Username',$userid);
+			$logFailed->add('Reason','Invalid User');
 		}		
 		
 		# is this successful?
 		if( $authenticated ) {
 			# YES - set the login cookie, then redirect user to secure panel		
 			create_cookie();
-			setcookie('GS_ADMIN_USERNAME', $USR, time() + 3600,'/');
 			exec_action('successful-login-end');
 			redirect($cookie_redirect); 
 		} else {
 			# NO - show error message
 			$error = i18n_r('LOGIN_FAILED');
-      $logFailed->save(); 								            
-    } # end authenticated check
+			$logFailed->save();
+		} # end authenticated check
 		
 	} # end error check
 	

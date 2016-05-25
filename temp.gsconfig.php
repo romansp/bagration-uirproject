@@ -70,10 +70,58 @@ define('GSDONOTPING', 1);
 # http://php.net/manual/en/function.setlocale.php
 #setlocale(LC_ALL, 'en_US');
 
+# Define default timezone of server, accepts php timezone string
+# valid timeszones can be found here http://www.php.net/manual/en/timezones.php
+# define('GSTIMEZONE', 'America/Chicago');
+
 # Disable loading of external CDN versions of scripts (jQuery/jQueryUI)
 #define("GSNOCDN",true);
 
 # Disable Codemirror theme editor
 #define("GSNOHIGHLIGHT",true);
+
+# Forces suppression of php errors when GSDEBUG is false, despite php ini settings
+define('GSSUPPRESSERRORS',true);
+
+# Disable check for Apache web server, default false
+#define('GSNOAPACHECHECK', true);
+
+# Disable header version check
+#define('GSNOVERCHECK', true);
+
+# Enable alternate admin styles, current style constants are
+# GSSTYLE can be a comma delimied list of flags
+# note: stylesheets are cached, flush cache after changing
+#
+# style flags:
+# GSSTYLEWIDE = wide fluid
+# GSSTYLE_SBFIXED = fixed sidemenu
+# 
+# eg. 
+# define('GSSTYLE',GSSTYLE_SBFIXED);
+# define('GSSTYLE',GSSTYLEWIDE);
+#define('GSSTYLE',implode(',',array(GSSTYLEWIDE,GSSTYLE_SBFIXED)));
+
+# Disable Sitemap generation and menu items
+# define('GSNOSITEMAP',true);
+
+# Enable auto meta descriptions from content excerpts when empty
+# define('GSAUTOMETAD',true);
+
+# Set default language for missing lang token merge, 
+# accepts a lang string, default is 'en_US', false to disable
+# define('GSMERGELANG',false);
+
+# GS can prevent backend or frontend pages from being loaded inside a frame 
+# this is done by sending an x-frame-options header, and helps protect against clickjacking attacks
+# This is enabled by default for backend pages (true/GSBACK)
+# setting GSNOFRAME to (false) will disable this behavior
+# You can also customize this by passing the gs location definitions,
+# GSFRONT, GSBACK or GSBOTH definitions enable this for front and/or backends
+# define('GSNOFRAME',GSBOTH); # prevent in frames ALWAYS
+#define('GSNOFRAME',false);  # prevent in frames NEVER
+
+# GS can format its xml files before saving them if you require human readable source for them
+# define('GSFORMATXML',true);
 
 ?>

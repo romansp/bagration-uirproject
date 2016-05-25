@@ -13,13 +13,13 @@ $path = (isset($_GET['path'])) ? $_GET['path'] : "";
 	
 	<?php exec_action("files-sidebar"); ?>
 
-<?php if (!defined('GSNOUPLOADIFY')) { ?>	
+<?php if (!getDef('GSNOUPLOADIFY',true)) { ?>	
 	<li class="upload" id="sb_uploadify" >
 		<div id="uploadify"></div>
 	<?php 
 	
 	// create Uploadify uploader
-	$debug = (defined('GSDEBUG') && GSDEBUG == 1) ? 'true' : 'false';
+	$debug = isDebug() ? 'true' : 'false';
 	$fileSizeLimit = toBytes(ini_get('upload_max_filesize'))/1024;
 	echo "
 	<script type=\"text/javascript\">
@@ -40,23 +40,29 @@ $path = (isset($_GET['path'])) ? $_GET['path'] : "";
 			'cancelImage'	: 'template/images/cancel.png',
 			'checkExisting'	: 'uploadify-check-exists.php?path=".$path."',
 			'postData'		: {
-				'sessionHash' : '". $SESSIONHASH ."',
-				'path' : '". $path ."'
+			'sessionHash' : '". $SESSIONHASH ."',
+			'path' : '". $path ."'
 			},
 			onUploadProgress: function() {
 				$('#loader').show();
 			},
 			onUploadComplete: function() {
 				$('#loader').fadeOut(500);
-				$('#maincontent').load(location.href+' #maincontent', function() {
-					attachFilterChangeEvent();
-				});
+				$('#maincontent').load(location.href+' #maincontent > *');
 			},
 			onSelectError: function(file,errorCode,errorMsg) {
-				//alert(file + ' Error ' + errorCode +':'+errorMsg);
+				notifyError('<strong>Uploadify:</strong> ' + file.name + ' <br/>Error ' + errorCode +':'+errorMsg).popit().removeit();
 			},
+			onUploadSuccess: function(file,data,response) {	
+				if(data != 1){
+					notifyError('<strong>Uploadify:</strong>' + data + ' ('+file.name+')').popit().removeit();
+					jQuery('#' + file.id).addClass('uploadifyError');
+					jQuery('#' + file.id).find('.uploadifyProgressBar').css('width','1px');
+					jQuery('#' + file.id).find('.data').html(' - ' + 'Failed');					
+				}	 
+			},				
 			onUploadError: function(file,errorCode,errorMsg, errorString) {
-				alert(errorMsg);
+				notifyError('<strong>Uploadify:</strong> ' + errorMsg).popit().removeit();
 			}
 		});
 		}
@@ -71,7 +77,7 @@ $path = (isset($_GET['path'])) ? $_GET['path'] : "";
 
 <?php 
 # show normal upload form if Uploadify is turned off 
-if (defined('GSNOUPLOADIFY')) { ?>
+if (getDef('GSNOUPLOADIFY',true)) { ?>
 	<form class="uploadform" action="upload.php?path=<?php echo $path; ?>" method="post" enctype="multipart/form-data">
 		<p><input type="file" name="file[]" id="file" style="width:220px;" multiple /></p>
 		<input type="hidden" name="hash" id="hash" value="<?php echo $SESSIONHASH; ?>" />

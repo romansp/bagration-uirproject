@@ -39,11 +39,12 @@ function clean_url($text)  {
  */
 function clean_img_name($text)  { 
 	$text = strip_tags(lowercase($text)); 
-	$code_entities_match = array(' ?',' ','--','&quot;','!','@','#','$','%','^','&','*','(',')','+','{','}','|',':','"','<','>','?','[',']','\\',';',"'",',','/','*','+','~','`','='); 
-	$code_entities_replace = array('','-','-','','','','','','','','','','','','','','','','','','','','','','',''); 
+	$code_entities_match = array(' ?',' ','--','&quot;','!','#','$','%','^','&','*','(',')','+','{','}','|',':','"','<','>','?','[',']','\\',';',"'",',','/','*','+','~','`','='); 
+	$code_entities_replace = array('','-','-','','','','','','','','','','','','','','','','','','','','','',''); 
 	$text = str_replace($code_entities_match, $code_entities_replace, $text); 
 	$text = urlencode($text);
 	$text = str_replace('--','-',$text);
+	$text = str_replace('%40','@',$text); // ensure @ is not encoded
 	$text = rtrim($text, "-");
 	return $text; 
 } 
@@ -60,9 +61,11 @@ function clean_img_name($text)  {
  * @return string 
  */
 function to7bit($text,$from_enc="UTF-8") {
-		if (function_exists('mb_convert_encoding')) {
+	if (function_exists('mb_convert_encoding')) {
    		$text = mb_convert_encoding($text,'HTML-ENTITIES',$from_enc);
-   	}
+    } else {
+		$text = htmlspecialchars_decode(utf8_decode(htmlentities($text, ENT_COMPAT, 'utf-8', false)));
+	}
     $text = preg_replace(
         array('/&szlig;/','/&(..)lig;/',
              '/&([aouAOU])uml;/','/&(.)[^;]*;/'),
@@ -88,6 +91,7 @@ function email_template($message) {
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" >
 	<style>
 	 table td p {margin-bottom:15px;}
+	 a img {border:none;}
 	</style>
 	</head>
 	<body style="padding:0;margin:0;background: #f3f3f3;font-family:arial, \'helvetica neue\', helvetica, serif" >
@@ -142,17 +146,18 @@ function sendmail($to,$subject,$message) {
 	if (defined('GSFROMEMAIL')){
 		$fromemail = GSFROMEMAIL; 
 	} else {
-		$fromemail = 'noreply@get-simple.info';
+		if(!empty($_SERVER['SERVER_ADMIN']) && check_email_address($_SERVER['SERVER_ADMIN'])) $fromemail = $_SERVER['SERVER_ADMIN'];
+		else $fromemail =  'noreply@'.$_SERVER['SERVER_NAME'];
 	}
-	
+
 	global $EMAIL;
 	$headers  ='"MIME-Version: 1.0' . PHP_EOL;
 	$headers .= 'Content-Type: text/html; charset=UTF-8' . PHP_EOL;
 	$headers .= 'From: '.$fromemail . PHP_EOL;
-  $headers .= 'Reply-To: '.$fromemail . PHP_EOL;
-  $headers .= 'Return-Path: '.$fromemail . PHP_EOL;
+  	$headers .= 'Reply-To: '.$fromemail . PHP_EOL;
+  	$headers .= 'Return-Path: '.$fromemail . PHP_EOL;
 	
-	if( mail($to,'=?UTF-8?B?'.base64_encode($subject).'?=',"$message",$headers) ) {
+	if( @mail($to,'=?UTF-8?B?'.base64_encode($subject).'?=',"$message",$headers) ) {
 		return 'success';
 	} else {
 		return 'error';
@@ -169,17 +174,29 @@ function sendmail($to,$subject,$message) {
  * @param array $a
  * @param string $subkey Key within the array passed you want to sort by
  * @param string $order - order 'asc' ascending or 'desc' descending
+ * @param bool $natural - sort using a "natural order" algorithm
  * @return array
  */
-function subval_sort($a,$subkey, $order='asc') {
+function subval_sort($a,$subkey, $order='asc',$natural = true) {
 	if (count($a) != 0 || (!empty($a))) { 
 		foreach($a as $k=>$v) {
-			$b[$k] = lowercase($v[$subkey]);
+			if(isset($v[$subkey])) $b[$k] = lowercase($v[$subkey]);
 		}
-		($order=='asc')? asort($b) : arsort($b);
+
+		if(!isset($b)) return $a;
+
+		if($natural){
+			natsort($b);
+			if($order=='desc') $b = array_reverse($b,true);	
+		} 
+		else {
+			($order=='asc')? asort($b) : arsort($b);
+		}
+		
 		foreach($b as $key=>$val) {
 			$c[] = $a[$key];
 		}
+
 		return $c;
 	}
 }
@@ -232,7 +249,7 @@ function isFile($file, $path, $type = 'xml') {
  * @return array
  */
 function getFiles($path) {
-	$handle = opendir($path) or die("Unable to open $path");
+	$handle = opendir($path) or die("getFiles: Unable to open $path");
 	$file_arr = array();
 	while ($file = readdir($handle)) {
 		if ($file != '.' && $file != '..') {
@@ -241,6 +258,21 @@ function getFiles($path) {
 	}
 	closedir($handle);
 	return $file_arr;
+}
+
+$microtime_start = null;
+
+function get_execution_time($reset=false)
+{
+	GLOBAL $microtime_start;
+    if($reset) $microtime_start = null;
+		
+    if($microtime_start === null)
+    {
+        $microtime_start = microtime(true);
+        return 0.0; 
+    }    
+    return round(microtime(true) - $microtime_start,5); 
 }
 
 /**
@@ -254,9 +286,11 @@ function getFiles($path) {
  * @return object
  */
 function getXML($file) {
-	$xml = file_get_contents($file);
-	$data = simplexml_load_string($xml, 'SimpleXMLExtended', LIBXML_NOCDATA);
-	return $data;
+	$xml = @file_get_contents($file);
+	if($xml){
+		$data = simplexml_load_string($xml, 'SimpleXMLExtended', LIBXML_NOCDATA); 
+		return $data;
+	}	
 }
 
 /**
@@ -270,7 +304,17 @@ function getXML($file) {
  * @return bool
  */
 function XMLsave($xml, $file) {
-	$success = $xml->asXML($file) === TRUE;
+	# get_execution_time(true);
+	if(!is_object($xml)){
+		debugLog(__FUNCTION__ . ' failed to save xml');
+		return false;
+	}	
+	$data = @$xml->asXML();
+	if(getDef('GSFORMATXML',true)) $data = formatXmlString($data); // format xml if config setting says so
+	$data = exec_filter('xmlsave',$data); // @filter xmlsave executed before writing string to file
+	$success = file_put_contents($file, $data); // LOCK_EX ?
+	
+	// debugLog('XMLsave: ' . $file . ' ' . get_execution_time());	
 	
 	if (defined('GSCHMOD')) {
 		return $success && chmod($file, GSCHMOD);
@@ -415,7 +459,7 @@ function find_url($slug, $parent, $type='full') {
     }
   }
   
-	if ($PERMALINK != '' && $slug != 'index'){
+	if (trim($PERMALINK) != '' && $slug != 'index'){
 		$plink = str_replace('%parent%/', $parent, $PERMALINK);
 		$plink = str_replace('%parent%', $parent, $plink);
 		$plink = str_replace('%slug%', $slug, $plink);
@@ -428,6 +472,8 @@ function find_url($slug, $parent, $type='full') {
 /**
  * Strip Path
  *
+ * Strips all path info from a filepath or basedir
+ *
  * @since 2.0
  * @author Martijn van der Ven
  *
@@ -435,12 +481,9 @@ function find_url($slug, $parent, $type='full') {
  * @return string
  */
 function strippath($path) {
-	$segments = explode('/',implode('/',explode('\\',$path)));
-	$path = '';
-	foreach ($segments as $part) if ($part !== '..') $path .= trim($part).'/';
-	$path = preg_replace('/\/+/','/',substr($path, 0, -1));
-	if (strlen($path)<=0||$path=='/') return false;
-	return $path;
+	$pathparts = pathinfo($path);
+	if(isset($pathparts['extension'])) return $pathparts['filename'].'.'.$pathparts['extension'];
+	return $pathparts['basename'];
 }
 
 /**
@@ -487,11 +530,18 @@ function encode_quotes($text)  {
 function redirect($url) {
 	global $i18n;
 
+	// handle expired sessions for ajax requests
+	if(requestIsAjax() && !cookie_check()){
+		header('HTTP/1.1 401 Unauthorized', true, 401);
+		header('WWW-Authenticate: FormBased');
+		die();
+	}	
+
 	if (!headers_sent($filename, $linenum)) {
     header('Location: '.$url);
   } else {
     echo "<html><head><title>".i18n_r('REDIRECT')."</title></head><body>";
-    if ( !defined('GSDEBUG') || (GSDEBUG != TRUE) ) {
+    if ( !isDebug() ) {
 	    echo '<script type="text/javascript">';
 	    echo 'window.location.href="'.$url.'";';
 	    echo '</script>';
@@ -526,24 +576,24 @@ function i18n($name, $echo=true) {
 	global $i18n;
 	global $LANG;
 
-	if (array_key_exists($name, $i18n)) {
-		$myVar = $i18n[$name];
-	} else {
-		# this messes with the global $i18n
-		//include_once(GSLANGPATH . 'en_US.php');
-		if (array_key_exists($name, $i18n)) {
+	if(isset($i18n)){
+
+		if (isset($i18n[$name])) {
 			$myVar = $i18n[$name];
 		} else {
 			$myVar = '{'.$name.'}';
 		}
 	}
-	
+	else {
+		$myVar = '{'.$name.'}'; // if $i18n doesnt exist yet return something
+	}
+
 	if (!$echo) {
 		return $myVar;
 	} else {
 		echo $myVar;
 	}
-} 
+}
 
 /**
  * Return i18n
@@ -589,22 +639,40 @@ function i18n_merge($plugin, $language=null) {
  * @author mvlcek
  * @uses GSPLUGINPATH
  *
- * @param string $plugin
+ * @param string $plugin null if merging in core langs
  * @param string $lang
  * @param string $globali18n
  * @return bool
  */
 function i18n_merge_impl($plugin, $lang, &$globali18n) { 
-  $i18n = array();
-  if (!file_exists(GSPLUGINPATH.$plugin.'/lang/'.$lang.'.php')) {
-  	return false;
+
+  $i18n = array(); // local from file
+  if(!isset($globali18n)) $globali18n = array(); //global ref to $i18n
+	
+  $path     = ($plugin ? GSPLUGINPATH.$plugin.'/lang/' : GSLANGPATH);
+  $filename = $path.$lang.'.php';
+  $prefix   = $plugin ? $plugin.'/' : '';
+
+  if (!filepath_is_safe($filename,$path) || !file_exists($filename)) {
+    return false;
   }
-  @include(GSPLUGINPATH.$plugin.'/lang/'.$lang.'.php'); 
-  if (count($i18n) > 0) foreach ($i18n as $code => $text) {
-    if (!array_key_exists($plugin.'/'.$code, $globali18n)) {
-    	$globali18n[$plugin.'/'.$code] = $text;
+
+  include($filename); 
+  
+  // if core lang and glboal is empty assign
+  if(!$plugin && !$globali18n && count($i18n) > 0){
+     $globali18n = $i18n;
+     return true;
+  }
+
+  // replace on per key basis
+  if (count($i18n) > 0){
+    foreach ($i18n as $code => $text) {
+      if (!array_key_exists($prefix.$code, $globali18n)) {
+        $globali18n[$prefix.$code] = $text;
+      }
     }
-  }
+  } 
   return true;
 }
 
@@ -623,11 +691,53 @@ function safe_slash_html($text) {
 	} else {
 		$text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
 	}
-	$text = str_replace(chr(12), '', $text);
-	$text = str_replace(chr(3), ' ', $text);
-	return $text;
+
+	return xmlFilterChars($text);
 }
 
+/**
+ * xmlFilterChars
+ *
+ * @since  3.3.3
+ * @param  str $str string to prepare for xml cdata
+ * @return str      filtered string
+ */
+function xmlFilterChars($str){
+	$chr = getRegexUnicode();
+	// filter only xml allowed characters
+	return preg_replace ('/[^'.$chr['ht'].$chr['lf'].$chr['cr'].$chr['lower'].$chr['upper'].']+/u', ' ', $str);
+}
+
+/**
+ * getRegexUnicode
+ * defines unicode char and char ranges for use in regex filters
+ *
+ * @since  3.3.3
+ * @param  str $id key to return from char range array
+ * @return mixed     array or str if id specified of regex char strings
+ */
+function getRegexUnicode($id = null){
+	$chars = array(
+		'null'       => '\x{0000}',            // 0 null
+		'ht'         => '\x{0009}',            // 9 horizontal tab
+		'lf'         => '\x{000a}',            // 10 line feed
+		'vt'         => '\x{000b}',            // 11 vertical tab
+		'FF'         => '\x{000c}',            // 12 form feed
+		'cr'         => '\x{000d}',            // 13 carriage return
+		'cntrl'      => '\x{0001}-\x{0019}',   // 1-31 control codes
+		'cntrllow'   => '\x{0001}-\x{000c}',   // 1-12 low end control codes
+		'cntrlhigh'  => '\x{000e}-\x{0019}',   // 14-31 high end control codes
+		'bom'        => '\x{FEFF}',            // 65279 BOM byte order mark
+		'lower'      => '\x{0020}-\x{D7FF}',   // 32 - 55295
+		'surrogates' => '\x{D800}-\x{DFFF}',   // 55296 - 57343
+		'upper'      => '\x{E000}-\x{FFFD}',   // 57344 - 65533
+		'nonchars'   => '\x{FFFE}-\x{FFFF}',   // 65534 - 65535
+		'privateb'   => '\x{10000}-\x{10FFFD}' // 65536 - 1114109
+	);
+
+	if(isset($id)) return $chars[$id];
+	return $chars;
+}
 
 /**
  * Safe StripSlashes HTML Decode
@@ -683,6 +793,11 @@ function pathinfo_filename($file) {
 	}
 }
 
+
+function getFileExtension($file){
+	return lowercase(pathinfo($file,PATHINFO_EXTENSION));
+}
+
 /**
  * Suggest Site Path
  *
@@ -696,20 +811,20 @@ function pathinfo_filename($file) {
  * @param bool $parts 
  * @return string
  */
-function suggest_site_path($parts=false) {
+function suggest_site_path($parts=false, $protocolRelative = false) {
 	global $GSADMIN;
-	$protocol = http_protocol();
+	$protocol   = $protocolRelative ? '' : http_protocol().':';
 	$path_parts = pathinfo(htmlentities($_SERVER['PHP_SELF'], ENT_QUOTES));
 	$path_parts = str_replace("/".$GSADMIN, "", $path_parts['dirname']);
-	$port = ($p=$_SERVER['SERVER_PORT'])!='80'&&$p!='443'?':'.$p:'';
+	$port       = ($p=$_SERVER['SERVER_PORT'])!='80'&&$p!='443'?':'.$p:'';
 	
 	if($path_parts == '/') {
 	
-		$fullpath = $protocol."://". htmlentities($_SERVER['SERVER_NAME'], ENT_QUOTES) . $port . "/";
+		$fullpath = $protocol."//". htmlentities($_SERVER['SERVER_NAME'], ENT_QUOTES) . $port . "/";
 	
 	} else {
 		
-		$fullpath = $protocol."://". htmlentities($_SERVER['SERVER_NAME'], ENT_QUOTES) . $port . $path_parts ."/";
+		$fullpath = $protocol."//". htmlentities($_SERVER['SERVER_NAME'], ENT_QUOTES) . $port . $path_parts ."/";
 		
 	}
 		
@@ -733,9 +848,9 @@ function suggest_site_path($parts=false) {
  */
 function myself($echo=true) {
 	if ($echo) {
-		echo htmlentities($_SERVER['PHP_SELF'], ENT_QUOTES);
+		echo htmlentities(basename($_SERVER['PHP_SELF']), ENT_QUOTES);
 	} else {
-		return htmlentities($_SERVER['PHP_SELF'], ENT_QUOTES);
+		return htmlentities(basename($_SERVER['PHP_SELF']), ENT_QUOTES);
 	}
 }
 
@@ -907,7 +1022,7 @@ function validate_url($u) {
  * @param string $xml
  * @return string
  */
-function formatXmlString($xml) {  
+function formatXmlString_legacy($xml) {  
   
   // add marker linefeeds to aid the pretty-tokeniser (adds a linefeed between all tag-end boundaries)
   $xml = preg_replace('/(>)(<)(\/*)/', "$1\n$2$3", $xml);
@@ -946,6 +1061,25 @@ function formatXmlString($xml) {
   
   return $result;
 }
+
+/**
+   * formats the xml output readable, accepts simplexmlobject or string
+   * @param mixed  $data instance of SimpleXmlObject or string
+   * @return string of indented xml-elements
+   */
+  function formatXmlString($data){
+ 
+	if(gettype($data) === 'object') $data = $data->asXML();
+
+    //Format XML to save indented tree rather than one line
+  	$dom = new DOMDocument('1.0');
+  	$dom->preserveWhiteSpace = false;
+  	$dom->formatOutput = true;
+  	$dom->loadXML($data);
+ 
+  	$ret = $dom->saveXML();
+  	return $ret;
+  }
 
 /**
  * Check Server Protocol
@@ -1083,19 +1217,6 @@ function removerelativepath($file) {
 }
 
 /**
- * Debug Console Log
- *
- * @since 3.1
- *
- * @param $txt string
- */
-function debugLog($txt) {
-	global $GS_debug;	
-	array_push($GS_debug,$txt);
-}
-
-
-/**
  * Return a directory of files and folders
  *
  * @since 3.1
@@ -1126,5 +1247,143 @@ function directoryToArray($directory, $recursive) {
 	return $array_items;
 }
 
+
+/**
+ * Returns definition safely
+ * 
+ * @since 3.1.3
+ * 
+ * @param str $id 
+ * @param bool $isbool treat definition as boolean and cast it
+ * @return * returns definition or null if not defined
+ */
+function getDef($id,$isbool = false){
+	if( defined($id) ) {
+		if($isbool) return (bool) constant($id);
+		return constant($id);
+	}
+}
+
+/**
+ * Alias for checking for debug constant
+ * @since 3.2.1
+ * @return  bool true if debug enabled
+ */
+function isDebug(){
+	return getDef('GSDEBUG',true);
+}
+
+/**
+ * check gs version is Beta
+ *
+ * @since  3.3.0
+ * @return boolean true if beta release
+ */
+function isBeta(){
+	return strPos(get_site_version(false),"b");
+}
+
+/**
+ * Check if request is an ajax request
+ * @since  3.3.0
+ * @return bool true if ajax
+ */
+function requestIsAjax(){
+	return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') || isset($_GET['ajax']);
+}
+
+/**
+ * check if array is multidimensional
+ * @since 3.3.2
+ * @param  mixed $ary
+ * @return bool true if $ary is a multidimensional array
+ */
+function arrayIsMultid($ary){
+	return is_array($ary) && ( count($ary) != count($ary,COUNT_RECURSIVE) );
+}
+
+/**
+ * normalizes toolbar setting, always returns js array string syntax
+ * @since 3.3.2
+ * 
+ * @param mixed $var string or array var to convert to js array syntax
+ */
+function returnJsArray($var){
 	
+	if(!$var) return;
+
+	if(!is_array($var)) {
+		// if looks like an array string try to parse as array
+		if(strrpos($var, '[') !==false){
+			// normalize array strings
+			$var = stripslashes($var);         // remove escaped quotes
+			$var = trim(trim($var),',');       // remove trailing commas
+			$var = str_replace('\'','"',$var); // replace single quotes with double (for json)
+			
+			$ary = json_decode($var);
+			
+			// add primary nest if missing
+			if(!is_array($ary) || !arrayIsMultid($ary) ) $ary = json_decode('['.$var.']');
+			
+			// if proper array use it
+			if(is_array($ary) ) $var = json_encode($ary);
+			else $var = "'".trim($var,"\"'")."'"; 
+		} 
+		else{
+			// else quote wrap string, trim to avoid double quoting
+			$var = "'".trim($var,"\"'")."'";
+		}	
+	} 
+	else {
+		// convert php array to js array
+		$var = json_encode($var);
+	}
+
+	return $var;
+}
+
+
+/**
+ * sends an x-frame-options heaeder
+ * @since  3.4
+ * @param  string $value header value to send, default `DENY`
+ */
+function header_xframeoptions($value = null){
+	if(!isset($value)){
+		if(getDef('GSNOFRAMEDEFAULT',true)) $value = getDef('GSNOFRAMEDEFAULT');
+		else $value = 'DENY';
+	}	
+	header('X-Frame-Options: ' . $value); // FF 3.6.9+ Chrome 4.1+ IE 8+ Safari 4+ Opera 10.5+
+}
+
+
+/**
+ * strip non printing white space from string
+ * replaces various newlines and tab chars with replacement character
+ * then cleans up multiple replacement characters
+ * 
+ * eg. strip_whitespace("Line   1\n\tLine 2\r\t\tLine 3  \r\n\t\t\tLine 4\n  "," ");
+ * @since 3.3.6
+ * @param  str $str     input string
+ * @param  string $replace replacement character
+ * @return str          new string
+ */
+function strip_whitespace($str,$replace = ' '){
+	$chars = array("\r\n", "\n", "\r", "\t");
+	$str   = str_replace($chars, $replace, $str);
+	return preg_replace('/['.$replace.']+/', $replace, $str);
+}
+
+/**
+ * strip shortcodes based on pattern
+ * @since  3.3.6
+ * @param  str $str     input string
+ * @param  string $pattern regex pattern to strip
+ * @return str          new string
+ */
+function strip_content($str, $pattern = '/[({]%.*?%[})]/'){
+	if(getDef('GSCONTENTSTRIPPATTERN',true)) $pattern = getDef('GSCONTENTSTRIPPATTERN');
+	return 	preg_replace($pattern, '', $str);
+}
+
 ?>

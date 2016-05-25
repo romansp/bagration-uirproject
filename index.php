@@ -7,25 +7,44 @@
  * @package GetSimple
  * @subpackage FrontEnd
  */
- 	
-# Setup inclusions
-$load['plugin'] = true;
-if (file_exists('gsconfig.php')) {
-	require_once('gsconfig.php');
-}
 
-# Relative
-if (defined('GSADMIN')) {
-	$GSADMIN = GSADMIN;
-} else {
-	$GSADMIN = 'admin';
-}
-$admin_relative = $GSADMIN.'/inc/';
-$lang_relative = $GSADMIN.'/';
-$base = true;
+
+/* pre-common setup, load gsconfig and get GSADMIN path */
+
+	/* GSCONFIG definitions */
+	if(!defined('GSFRONT')) define('GSFRONT',1);
+	if(!defined('GSBACK'))  define('GSBACK',2);
+	if(!defined('GSBOTH'))  define('GSBOTH',3);	
+	if(!defined('GSSTYLEWIDE')) define('GSSTYLEWIDE','wide'); // wide style sheet
+	if(!defined('GSSTYLE_SBFIXED')) define('GSSTYLE_SBFIXED','sbfixed'); // fixed sidebar
+
+	# Check and load gsconfig
+	if (file_exists('gsconfig.php')) {
+		require_once('gsconfig.php');
+	}
+
+	# Apply GSADMIN env
+	if (defined('GSADMIN')) {
+		$GSADMIN = GSADMIN;
+	} else {
+		$GSADMIN = 'admin';
+	}
+
+	# setup paths 
+	# @todo wtf are these for ?
+	$admin_relative = $GSADMIN.'/inc/';
+	$lang_relative = $GSADMIN.'/';
+
+	$load['plugin'] = true;
+	$base = true;
+
+/* end */
 
 # Include common.php
 include($GSADMIN.'/inc/common.php');
+
+# Hook to load page Cache
+exec_action('index-header');
 
 # get page id (url slug) that is being passed via .htaccess mod_rewrite
 if (isset($_GET['id'])){ 
@@ -36,31 +55,50 @@ if (isset($_GET['id'])){
 	$id = "index";
 }
 
+// filter to modify page id request
+$id = exec_filter('indexid',$id);
+ // $_GET['id'] = $id; // support for plugins that are checking get?
+
 # define page, spit out 404 if it doesn't exist
-$file = GSDATAPAGESPATH . $id .'.xml';
 $file_404 = GSDATAOTHERPATH . '404.xml';
 $user_created_404 = GSDATAPAGESPATH . '404.xml';
-if (! file_exists($file)) {
-	if (file_exists($user_created_404)) {
-		//user created their own 404 page, which overrides the default 404 message
-		$file = $user_created_404;
+$data_index = null;
+
+// apply page data if page id exists
+if (isset($pagesArray[$id])) {
+	$data_index = getXml(GSDATAPAGESPATH . $id . '.xml');
+} 
+
+// filter to modify data_index obj
+$data_index = exec_filter('data_index',$data_index);
+
+// page not found handling
+if(!$data_index) {	
+	if (isset($pagesArray['404'])) {
+		// use user created 404 page
+		$data_index = getXml($user_created_404);		
 	} elseif (file_exists($file_404))	{
-		$file = $file_404;
-	}
+		// default 404
+		$data_index = getXml($file_404);
+	} else {
+		// fail over
+		redirect('404');
+	} 	
 	exec_action('error-404');
 }
 
-# get data from page
-$data_index = getXML($file);
-$title = $data_index->title;
-$date = $data_index->pubDate;
-$metak = $data_index->meta;
-$metad = $data_index->metad;
-$url = $data_index->url;
-$content = $data_index->content;
-$parent = $data_index->parent;
+$title         = $data_index->title;
+$date          = $data_index->pubDate;
+$metak         = $data_index->meta;
+$metad         = $data_index->metad;
+$url           = $data_index->url;
+$content       = $data_index->content;
+$parent        = $data_index->parent;
 $template_file = $data_index->template;
-$private = $data_index->private;
+$private       = $data_index->private;	
+
+// after fields from dataindex, can modify globals here or do whatever by checking them
+exec_action('index-post-dataindex');
 
 # if page is private, check user
 if ($private == 'Y') {
@@ -77,7 +115,7 @@ if ($url == '404') {
 }
 
 # check for correctly formed url
-if (defined('GSCANONICAL')) {
+if (getDef('GSCANONICAL',true)) {
 	if ($_SERVER['REQUEST_URI'] != find_url($url, $parent, 'relative')) {
 		redirect(find_url($url, $parent));
 	}

@@ -13,11 +13,14 @@
 $load['plugin'] = true;
 include('inc/common.php');
 login_cookie_check();
+
 $dirsSorted=null;$filesSorted=null;$foldercount=null;
 
-if (isset($_GET['path'])) {
+if (isset($_GET['path']) && !empty($_GET['path'])) {
 	$path = str_replace('../','', $_GET['path']);
 	$path = tsl("../data/uploads/".$path);
+	// die if path is outside of uploads
+	if(!path_is_safe($path,GSDATAUPLOADPATH)) die();
 	$subPath = str_replace('../','', $_GET['path']);
 	$subFolder = tsl($subPath);
 } else { 
@@ -42,18 +45,18 @@ if (isset($_FILES['file'])) {
 			
 			//set variables
 			$count = '1';
-			$file_loc = $path . clean_img_name(to7bit($_FILES["file"]["name"][$i]));
 			$base = clean_img_name(to7bit($_FILES["file"]["name"][$i]));
+			$file_loc = $path . $base;
 			
 			//prevent overwriting
 			while ( file_exists($file_loc) ) {
-				$file_loc = $path . $count.'-'. clean_img_name(to7bit($_FILES["file"]["name"][$i]));
-				$base = $count.'-'. clean_img_name(to7bit($_FILES["file"]["name"][$i]));
+				$file_loc = $path . $count.'-'. $base;
+				$base = $count.'-'. $base;
 				$count++;
 			}
 			
 			//validate file
-			if (validate_safe_file($_FILES["file"]["tmp_name"][$i], $_FILES["file"]["name"][$i],  $_FILES["file"]["type"][$i])) {
+			if (validate_safe_file($_FILES["file"]["tmp_name"][$i], $_FILES["file"]["name"][$i])) {
 				move_uploaded_file($_FILES["file"]["tmp_name"][$i], $file_loc);
 				if (defined('GSCHMOD')) {
 					chmod($file_loc, GSCHMOD);
@@ -61,6 +64,10 @@ if (isset($_FILES['file'])) {
 					chmod($file_loc, 0644);
 				}
 				exec_action('file-uploaded');
+				
+				// generate thumbnail				
+				require_once('inc/imagemanipulation.php');	
+				genStdThumb($subFolder,$base);					
 				$messages[] = i18n_r('FILE_SUCCESS_MSG').': <a href="'. $SITEURL .'data/uploads/'.$subFolder.$base.'">'. $SITEURL .'data/uploads/'.$subFolder.$base.'</a>';
 			} else {
 				$messages[] = $_FILES["file"]["name"][$i] .' - '.i18n_r('ERROR_UPLOAD');
@@ -73,12 +80,12 @@ if (isset($_FILES['file'])) {
 	 // after uploading all files process messages
 		if(sizeof($messages) != 0) { 
 			foreach($messages as $msg) {
-				$success .= $msg.'<br />';
+				$success = $msg.'<br />';
 			}
 		}
 		if(sizeof($errors) != 0) {
 			foreach($errors as $msg) {
-				$error .= $msg.'<br />';
+				$error = $msg.'<br />';
 			}
 		}
 	}
@@ -96,7 +103,7 @@ if (isset($_GET['newfolder'])) {
 	
 	$newfolder = $_GET['newfolder'];
 	// check for invalid chars
-	$cleanname = clean_url(to7bit($newfolder, "UTF-8"));
+	$cleanname = clean_url(to7bit(strippath($newfolder), "UTF-8"));
 	if (file_exists($path.$cleanname) || $cleanname=='') {
 			$error = i18n_r('ERROR_FOLDER_EXISTS');
 	} else {
@@ -136,15 +143,16 @@ get_template('header', cl($SITENAME).' &raquo; '.i18n_r('FILE_MANAGEMENT'));
       		$dirsArray = array();
       
 			$filenames = getFiles($path);
+
 			if (count($filenames) != 0) { 
 				foreach ($filenames as $file) {
-					if ($file == "." || $file == ".." || $file == ".htaccess" ){
+					if ($file == "." || $file == ".." || $file == ".htaccess" || $file == "index.php"){
             // not a upload file
           	} elseif (is_dir($path . $file)) {
             $dirsArray[$dircount]['name'] = $file;
             clearstatcache();
 						$ss = @stat($path . $file);
-						$dirsArray[$dircount]['date'] = @date('M j, Y',$ss['ctime']);
+						$dirsArray[$dircount]['date'] = @date('M j, Y',$ss['mtime']);
             $dircount++;
 					} else {
 						$filesArray[$count]['name'] = $file;
@@ -212,37 +220,40 @@ get_template('header', cl($SITENAME).' &raquo; '.i18n_r('FILE_MANAGEMENT'));
      echo '<table class="highlight" id="imageTable">'; 
      echo '<tr><th class="imgthumb" ></th><th>'.i18n_r('FILE_NAME').'</th>';
      echo '<th style="text-align:right;">'.i18n_r('FILE_SIZE').'</th>';
-     echo '<th style="text-align:right;">'.i18n_r('DATE').'</th>';
-     if (defined('GSDEBUG')){
+	 if (isDebug()) {
      	 echo '<th style="text-align:right;">'.i18n_r('PERMS').'</th>';
      }
+     echo '<th style="text-align:right;">'.i18n_r('DATE').'</th>';
      echo '<th><!-- actions --></th></tr>';  
      if (count($dirsSorted) != 0) {
      		$foldercount = 0;
         foreach ($dirsSorted as $upload) {
         	
-        	$upload['name'] = rawurlencode($upload['name']);
-        	
         	# check to see if folder is empty
         	$directory_delete = null;
         	if ( check_empty_folder($path.$upload['name']) ) {  
-						$directory_delete = '<a class="delconfirm" title="'.i18n_r('DELETE_FOLDER').': '. $upload['name'] .'" href="deletefile.php?path='.$urlPath.'&amp;folder='. $upload['name'] . '&amp;nonce='.get_nonce("delete", "deletefile.php").'">&times;</a>';
+						$directory_delete = '<a class="delconfirm" title="'.i18n_r('DELETE_FOLDER').': '. rawurlencode($upload['name']) .'" href="deletefile.php?path='.$urlPath.'&amp;folder='. rawurlencode($upload['name']) . '&amp;nonce='.get_nonce("delete", "deletefile.php").'">&times;</a>';
 					}
         	$directory_size = '<span>'.folder_items($path.$upload['name']).' '.i18n_r('ITEMS').'</span>';
         	
           echo '<tr class="All folder '.$upload['name'].'" >';
           echo '<td class="imgthumb" ></td><td>';
         
-          $adm = substr($path . $upload['name'] ,  16); 
-          echo '<img src="template/images/folder.png" width="11" /> <a href="upload.php?path='.$adm.'" ><strong>'.$upload['name'].'</strong></a></td>';
+          $adm = substr($path . rawurlencode($upload['name']) ,  16); 
+          echo '<img src="template/images/folder.png" width="11" /> <a href="upload.php?path='.$adm.'" ><strong>'.htmlspecialchars($upload['name']).'</strong></a></td>';
           echo '<td style="width:80px;text-align:right;" ><span>'.$directory_size.'</span></td>';
           
           // get the file permissions.
-					if ($isUnixHost && defined('GSDEBUG') && function_exists('posix_getpwuid')) {
-						$filePerms = substr(sprintf('%o', fileperms($path.$upload['name'])), -4);
-						$fileOwner = posix_getpwuid(fileowner($path.$upload['name']));
-						echo '<td style="width:70px;text-align:right;"><span>'.$fileOwner['name'].'/'.$filePerms.'</span></td>';
-					}
+		if (isDebug()) {
+			$filePerms = substr(sprintf('%o', fileperms($path.$upload['name'])), -4);
+			if($isUnixHost){
+				$fileOwner = function_exists('posix_getpwuid') ? posix_getpwuid(fileowner($path.$upload['name'])) : '';
+				$fileOwnerName = isset($fileOwner['name']) ? $fileOwner['name'] : '';
+			} else {
+				$fileOwnerName = getenv('USERNAME');
+			}
+			echo '<td style="width:70px;text-align:right;"><span>'.$fileOwnerName.'/'.$filePerms.'</span></td>';
+		}
 					
 		      echo '<td style="width:85px;text-align:right;" ><span>'. shtDate($upload['date']) .'</span></td>';
           echo '<td class="delete" >'.$directory_delete.'</td>';
@@ -262,14 +273,15 @@ get_template('header', cl($SITENAME).' &raquo; '.i18n_r('FILE_MANAGEMENT'));
 					echo '<td class="imgthumb" >';
 					if ($upload['type'] == i18n_r('IMAGES') .' Images') {
 						$gallery = 'rel=" facybox_i"';
-						$pathlink = 'image.php?i='.$upload['name'].'&amp;path='.$subPath;
+						$pathlink = 'image.php?i='.rawurlencode($upload['name']).'&amp;path='.$subPath;
 						$thumbLink = $urlPath.'thumbsm.'.$upload['name'];
+						$thumbLinkEncoded = $urlPath.'thumbsm.'.rawurlencode($upload['name']);
 						if (file_exists(GSTHUMBNAILPATH.$thumbLink)) {
-							$imgSrc='<img src="../data/thumbs/'. $thumbLink .'" />';
+							$imgSrc='<img src="../data/thumbs/'. $thumbLinkEncoded .'" />';
 						} else {
-							$imgSrc='<img src="inc/thumb.php?src='. $urlPath . $upload['name'] .'&amp;dest='. $thumbLink .'&amp;f=1" />';
+							$imgSrc='<img src="inc/thumb.php?src='. $urlPath . rawurlencode($upload['name']) .'&amp;dest='. $thumbLinkEncoded .'&amp;f=1" />';
 						}
-						echo '<a href="'. $path . $upload['name'] .'" title="'. $upload['name'] .'" rel=" facybox_i" >'.$imgSrc.'</a>';
+						echo '<a href="'. $path . rawurlencode($upload['name']) .'" title="'. rawurlencode($upload['name']) .'" rel=" facybox_i" >'.$imgSrc.'</a>';
 					} else {
 						$gallery = '';
 						$controlpanel = '';
@@ -280,14 +292,19 @@ get_template('header', cl($SITENAME).' &raquo; '.i18n_r('FILE_MANAGEMENT'));
              
 		            
 					// get the file permissions.
-					if ($isUnixHost && defined('GSDEBUG') && function_exists('posix_getpwuid')) {
+					if (isDebug()) {
 						$filePerms = substr(sprintf('%o', fileperms($path.$upload['name'])), -4);
-						$fileOwner = posix_getpwuid(fileowner($path.$upload['name']));
-						echo '<td style="width:70px;text-align:right;"><span>'.$fileOwner['name'].'/'.$filePerms.'</span></td>';
+						if($isUnixHost){
+							$fileOwner = function_exists('posix_getpwuid') ? posix_getpwuid(fileowner($path.$upload['name'])) : '';
+							$fileOwnerName = isset($fileOwner['name']) ? $fileOwner['name'] : '';
+						} else {
+							$fileOwnerName = getenv('USERNAME');
+						}
+						echo '<td style="width:70px;text-align:right;"><span>'.$fileOwnerName.'/'.$filePerms.'</span></td>';
 					}
-							
+
 					echo '<td style="width:85px;text-align:right;" ><span>'. shtDate($upload['date']) .'</span></td>';
-					echo '<td class="delete" ><a class="delconfirm" title="'.i18n_r('DELETE_FILE').': '. htmlspecialchars($upload['name']) .'" href="deletefile.php?file='. $upload['name'] . '&amp;path=' . $urlPath . '&amp;nonce='.get_nonce("delete", "deletefile.php").'">&times;</a></td>';
+					echo '<td class="delete" ><a class="delconfirm" title="'.i18n_r('DELETE_FILE').': '. htmlspecialchars($upload['name']) .'" href="deletefile.php?file='. rawurlencode($upload['name']) . '&amp;path=' . $urlPath . '&amp;nonce='.get_nonce("delete", "deletefile.php").'">&times;</a></td>';
 					echo '</tr>';
 					
 				}

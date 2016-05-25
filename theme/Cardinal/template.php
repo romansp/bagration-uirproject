@@ -3,7 +3,7 @@
 *
 * @File: 			template.php
 * @Package:		GetSimple
-* @Action:		Cardinal theme for the GetSimple CMS
+* @Action:		Cardinal theme for GetSimple CMS
 *
 *****************************************************/
 ?>
@@ -15,6 +15,7 @@
 	<title><?php get_page_clean_title(); ?> &lt; <?php get_site_name(); ?></title>
 	<?php get_header(); ?>
 	<meta name="robots" content="index, follow" />
+	<meta charset="utf-8">
 	<link rel="stylesheet" type="text/css" href="<?php get_theme_url(); ?>/style.css" media="all" />
 
 </head>
@@ -25,10 +26,10 @@
 	<div id="header">
 		
 		<ul id="nav">
-			<?php menu_master(); ?>
+			<?php get_navigation(return_page_slug()); ?>
 		</ul>
 		
-		<span class="logo2" href="<?php get_site_url(); ?>"><?php get_site_name(); ?></span>
+		<span class="logo2"><?php get_site_name(); ?></span>
 		<a class="logo" href="<?php get_site_url(); ?>"><?php get_site_name(); ?></a>
 
 	</div><!-- end header -->
@@ -50,7 +51,7 @@
 		<div class="section credits">
 			<p><?php echo date('Y'); ?> - <strong><?php get_site_name(); ?></strong></p>
 			<p>
-				Cardinal Theme by <a href="http://www.cagintranet.com" title="Pittsburgh Creative Agency" >Cagintranet</a><br />
+				Cardinal Theme by <a href="http://www.cagintranet.com" >Cagintranet</a><br />
 				<?php get_site_credits(); ?>
 			</p>
 		</div>

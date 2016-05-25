@@ -2,10 +2,10 @@
 /**
  * English Language File
  *
- * Date:				6 December 2011
- * Revision:		Feb 2011
- * Version:			GetSimple 3.1
- * Traductors: 	Chris Cagle 
+ * Date:			6 December 2011
+ * Revision:		Dec 2013
+ * Version:			GetSimple 3.3.0
+ * Traductors: 		Chris Cagle 
  *
  * @package GetSimple
  * @subpackage Language
@@ -40,11 +40,14 @@ $i18n = array(
 "LABEL_BASEURL"			=>	"Website URL",
 "LABEL_SUGGESTION"	=>	"Our suggestion is",
 "LABEL_USERNAME"		=>	"Username",
+"LABEL_DISPNAME"		=>	"Display Name",
 "LABEL_EMAIL"				=>	"Email Address",
 "LABEL_INSTALL"			=>	"Install Now!",
-"SELECT_LANGUAGE"		=> "Select your language",
-"CONTINUE_SETUP" 		=> "Continue with Setup",
-"DOWNLOAD_LANG" 		=> "Download Languages",
+"SELECT_LANGUAGE"		=>  "Select your language",
+"CONTINUE_SETUP" 		=>  "Continue with Setup",
+"DOWNLOAD_LANG" 		=>  "Download Languages",
+"SITE_UPDATED"			=>	"Your site has been updated",
+"SERVICE_UNAVAILABLE"	=>	"This page is temporarily unavailable",
 
 /* 
  * For: pages.php
@@ -90,6 +93,7 @@ $i18n = array(
 "FILE_UPLOAD"				=>	"File Upload",
 "OR"								=>	"or",
 "SAVE_AND_CLOSE"		=> "Save &amp; Close",
+"PAGE_UNSAVED"			=>	"Page has unsaved changes",
 
 /* 
  * For: upload.php
@@ -204,7 +208,7 @@ $i18n = array(
 "YOUR_NEW"					=>	"Your new",
 "PASSWORD_IS"				=>	"password is",
 "ATTEMPT"						=>	"Attempt",
-"MSG_PLEASE_EMAIL"	=>	"Please enter the username registered on this system, and a new password will be sent to it's email address.",
+"MSG_PLEASE_EMAIL"	=>	"Please enter the username registered on this system, and a new password will be sent to its email address.",
 "SEND_NEW_PWD"			=>	"Send New Password",
 
 /* 
@@ -224,14 +228,17 @@ $i18n = array(
 "PERMALINK" 				=> 	"Custom Permalink Structure",
 "MORE" 							=> 	"more",
 "HELP" 							=> 	"help",
+"FLUSHCACHE"        =>  "Flush All Caches",
+"FLUSHCACHE-SUCCESS"=>  "Caches Flushed Successfully",
+"DISPLAY_NAME"			=>  "A name for public display that is not your username",
 
 /* 
  * For: health-check.php
 */
 "WEB_HEALTH_CHECK"	=>	"Website Health Check",
 "VERSION"						=>	"Version",
-"UPG_NEEDED"				=>	"Upgrade needed to",
-"CANNOT_CHECK"			=>	"Unable to check. Your version is",
+"UPG_NEEDED"				=>	"Upgrade Recommended",
+"CANNOT_CHECK"			=>	"Upgrade Check Failed !",
 "LATEST_VERSION"		=>	"Latest version installed",
 "SERVER_SETUP"			=>	"Server Setup",
 "OR_GREATER_REQ"		=>	"or greater is required",
@@ -357,7 +364,7 @@ $i18n = array(
 /* 
  * For: changedata.php
 */
-"CANNOT_SAVE_EMPTY"	=>	"You cannot save a page with an empty title or slug",
+"CANNOT_SAVE_EMPTY"	=>	"You cannot save a page with an empty title",
 "META_DESC" 				=>  "Meta Description",
 
 /* 
@@ -418,11 +425,12 @@ $i18n = array(
 
 "PLUGINS_MANAGEMENT"=> "Plugin Management",
 "PLUGINS_INSTALLED" => "plugins installed",
+"PLUGIN_DISABLED"   => "Disabled Plugin",
 "SHOW_PLUGINS"			=> "Installed Plu<em>g</em>ins",
 "PLUGIN_NAME" 			=> "Plugin",
 "PLUGIN_DESC" 			=> "Description",
 "PLUGIN_VER" 				=> "Version",
-
+"PLUGIN_UPDATED"		=> "Plugin Updated",
 
 
 
@@ -519,8 +527,6 @@ $i18n = array(
 "API_DISCLAIMER" => "By enabling this API you are allowing any external application that has a copy of your key to have access to your website's data. <b>Only share this key with applications you trust.</b>",
 "API_REGEN_DISCLAIMER" => "When you regenerate your API Key, you will need to enter the new key into any external application using this API to connect to your website.",
 "API_CONFIRM" => "ARE YOU SURE?",
-
-
 
 
 "X" => "not translated",

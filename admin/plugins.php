@@ -20,7 +20,7 @@ $nonce    		= isset($_GET['nonce']) ? $_GET['nonce'] : null;
 if ($pluginid){
 	if(check_nonce($nonce, "set", "plugins.php")) {
 	  $plugin=antixss($pluginid);	
-	  change_plugin($pluginid);
+	  change_plugin($plugin);
 	  redirect('plugins.php');
 	}
 }
@@ -31,7 +31,7 @@ login_cookie_check();
 $counter = 0; $table = null;
 
 $pluginfiles = getFiles(GSPLUGINPATH);
-sort($pluginfiles);
+natcasesort($pluginfiles);
 $needsupdate = false;
 foreach ($pluginfiles as $fi) {
 	$pathExt = pathinfo($fi,PATHINFO_EXTENSION );
@@ -48,7 +48,7 @@ foreach ($pluginfiles as $fi) {
 			$cls_Disabled = 'hidden';
 			$trclass='disabled';
 		}
-		$api_data = json_decode(get_api_details('plugin', $fi));
+		$api_data = json_decode(get_api_details('plugin', $fi, getDef('GSNOPLUGINCHECK',true)));
 		$updatelink = null;
 		if (is_object($api_data) && $api_data->status == 'successful') {
 			if ($api_data->version > $plugin_info[$pathName]['version']) {				
@@ -97,7 +97,7 @@ get_template('header', cl($SITENAME).' &raquo; '.i18n_r('PLUGINS_MANAGEMENT'));
 		<h3><?php i18n('PLUGINS_MANAGEMENT'); ?></h3>
 		
 		<?php if ($counter > 0) { ?>
-			<table class="edittable">
+			<table class="edittable highlight">
 				<tr><th><?php i18n('PLUGIN_NAME'); ?></th><th><?php i18n('PLUGIN_DESC'); ?></th><th><?php i18n('STATUS'); ?></th></tr>
 				<?php echo $table; ?>
 			</table>

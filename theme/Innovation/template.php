@@ -1,19 +1,19 @@
 <?php if(!defined('IN_GS')){ die('you cannot load this page directly.'); }
 /****************************************************
 *
-* @File: 			tempate.php
+* @File: 			template.php
 * @Package:		GetSimple
-* @Action:		Innovation theme for the GetSimple 3.0
+* @Action:		Innovation theme for GetSimple CMS
 *
 *****************************************************/
 
 
-# Get this theme's settings based on what was entered within it's plugin. 
+# Get this theme's settings based on what was entered within its plugin. 
 # This function is in functions.php 
-Innovation_Settings();
+$innov_settings = Innovation_Settings();
 
 # Include the header template
-include('header.php'); 
+include('header.inc.php'); 
 ?>
 	
 	<div class="wrapper clearfix">
@@ -34,8 +34,8 @@ include('header.php');
 		</article>
 		
 		<!-- include the sidebar template -->
-		<?php include('sidebar.php'); ?>
+		<?php include('sidebar.inc.php'); ?>
 	</div>
 
 <!-- include the footer template -->
-<?php include('footer.php'); ?>
+<?php include('footer.inc.php'); ?>

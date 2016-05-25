@@ -5,10 +5,12 @@
  * @package GetSimple
  */
  
+$debugInfoUrl = 'http://get-simple.info/docs/debugging';
+
 if (cookie_check()) { 
 	echo '<ul id="pill"><li class="leftnav"><a href="logout.php" accesskey="'. find_accesskey(i18n_r('TAB_LOGOUT')).'" >'.i18n_r('TAB_LOGOUT').'</a></li>';
-	if (defined('GSDEBUG')) {
-		echo '<li class="debug"><a href="http://get-simple.info/wiki/themes:tips" target="_blank">'.i18n_r('DEBUG_MODE').'</a></li>';
+	if (isDebug()) {
+		echo '<li class="debug"><a href="'.$debugInfoUrl.'" target="_blank">'.i18n_r('DEBUG_MODE').'</a></li>';
 	}
 	echo '<li class="rightnav" ><a href="settings.php#profile">'.i18n_r('WELCOME').' <strong>'.$USR.'</strong>!</a></li></ul>';
 } 
@@ -21,7 +23,7 @@ if (get_filename_id() == 'load') {
 }
 
 ?>
-<h1><a href="<?php echo $SITEURL; ?>" target="_blank" ><?php echo cl($SITENAME); ?></a></h1>
+<h1 id="sitename"><a href="<?php echo $SITEURL; ?>" target="_blank" ><?php echo cl($SITENAME); ?></a></h1>
 <ul class="nav <?php echo $plugin_class; ?>">
 	<li id="nav_pages" ><a class="pages" href="pages.php" accesskey="<?php echo find_accesskey(i18n_r('TAB_PAGES'));?>" ><?php i18n('TAB_PAGES');?></a></li>
 	<li id="nav_upload" ><a class="files" href="upload.php" accesskey="<?php echo find_accesskey(i18n_r('TAB_FILES'));?>" ><?php i18n('TAB_FILES');?></a></li>

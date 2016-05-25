@@ -1,4 +1,4 @@
-<?php 
+<?php if(!defined('IN_GS')){ die('you cannot load this page directly.'); }
 /****************************************************
 *
 * @File:  caching_functions.php
@@ -10,11 +10,11 @@
 
 $pagesArray = array();
 
-add_action('index-pretemplate','getPagesXmlValues',array('false'));           		// make $pagesArray available to the theme 
-add_action('header', 'create_pagesxml',array('false'));            					// add hook to save  $tags values 
-add_action('page-delete', 'create_pagesxml',array('true'));            				// Create pages.array if file deleted
-
-
+add_action('index-header','getPagesXmlValues',array(false));      // make $pagesArray available to the front 
+add_action('header', 'getPagesXmlValues',array(get_filename_id() != 'pages'));  // make $pagesArray available to the back
+add_action('page-delete', 'create_pagesxml',array(true));         // Create pages.array if page deleted
+add_action('page-restored', 'create_pagesxml',array(true));        // Create pages.array if page undo
+add_action('changedata-aftersave', 'create_pagesxml',array(true));     // Create pages.array if page is updated
 
 /**
  * Get Page Content
@@ -48,6 +48,8 @@ function getPageContent($page,$field='content'){
  */
 function getPageField($page,$field){   
 	global $pagesArray;
+	if(!$pagesArray) getPagesXmlValues();	
+	
 	if ($field=="content"){
 	  getPageContent($page);  
 	} else {
@@ -73,6 +75,7 @@ function echoPageField($page,$field){
 	getPageField($page,$field);
 }
 
+
 /**
  * Return Page Content
  *
@@ -81,13 +84,17 @@ function echoPageField($page,$field){
  *
  * @since 3.1
  * @param $page - slug of the page to retrieve content
+ * @param $raw false - if true return raw xml
+ * @param $nofilter false - if true skip content filter execution
  *
  */
-function returnPageContent($page,$field='content'){   
+function returnPageContent($page, $field='content', $raw = false, $nofilter = false){   
 	$thisfile = file_get_contents(GSDATAPAGESPATH.$page.'.xml');
 	$data = simplexml_load_string($thisfile);
-	$content = stripslashes(htmlspecialchars_decode($data->$field, ENT_QUOTES));
-	if ($field=='content'){
+	if(!$data) return;
+	$content = $data->$field;
+	if(!$raw) $content = stripslashes(htmlspecialchars_decode($content, ENT_QUOTES));
+	if ($field=='content' and !$nofilter){
 		$content = exec_filter('content',$content);
 	}
   	return $content;
@@ -106,10 +113,12 @@ function returnPageContent($page,$field='content'){
  */
 function returnPageField($page,$field){   
 	global $pagesArray;
+	if(!$pagesArray) getPagesXmlValues();	
+
 	if ($field=="content"){
 	  $ret=returnPageContent($page); 
 	} else {
-		if (array_key_exists($field, $pagesArray[(string)$page])){
+		if (isset($pagesArray[(string)$page]) && array_key_exists($field, $pagesArray[(string)$page])){
 	  		$ret=strip_decode(@$pagesArray[(string)$page][(string)$field]);
 		} else {
 			$ret = returnPageContent($page,$field);
@@ -132,6 +141,7 @@ function returnPageField($page,$field){
  */
 function getChildren($page){
 	global $pagesArray;
+	if(!$pagesArray) getPagesXmlValues();		
 	$returnArray = array();
 	foreach ($pagesArray as $key => $value) {
 	    if ($pagesArray[$key]['parent']==$page){
@@ -156,6 +166,7 @@ function getChildren($page){
 
 function getChildrenMulti($page,$options=array()){
 	global $pagesArray;
+	if(!$pagesArray) getPagesXmlValues();		
 	$count=0;
 	$returnArray = array();
 	foreach ($pagesArray as $key => $value) {
@@ -180,42 +191,53 @@ function getChildrenMulti($page,$options=array()){
  * @since 3.1
  *  
  */
-function getPagesXmlValues($chkcount=true){
+function getPagesXmlValues($chkcount=false){
   global $pagesArray;
-  $pagesArray=array();
-  $file=GSDATAOTHERPATH."pages.xml";
-  if (file_exists($file)){
-  // load the xml file and setup the array. 
-    $thisfile = file_get_contents($file);
-    $data = simplexml_load_string($thisfile);
-    $pages = $data->item;
-      foreach ($pages as $page) {
-        $key=$page->url;
-        $pagesArray[(string)$key]=array();
-        foreach ($page->children() as $opt=>$val) {
-            $pagesArray[(string)$key][(string)$opt]=(string)$val;
-        }
-        
-      }
-	  $path = GSDATAPAGESPATH;
-	  $dir_handle = @opendir($path) or die("Unable to open $path");
-	  $filenames = array();
-	  while ($filename = readdir($dir_handle)) {
-	    $ext = substr($filename, strrpos($filename, '.') + 1);
-	    if ($ext=="xml"){
-	      $filenames[] = $filename;
-	    }
-	  }
-	  if ($chkcount==true){
-		  if (count($pagesArray)!=count($filenames)) {
-		  		create_pagesxml('true');
-	    		getPagesXmlValues(false);
-		  }
-	  }
-  } else {
-    create_pagesxml(true);
-    getPagesXmlValues(false);
-  }
+
+   // debugLog(__FUNCTION__.": chkcount - " .(int)$chkcount);
+   
+   // if page cache not load load it
+   if(!$pagesArray){
+		$pagesArray=array();
+		$file=GSDATAOTHERPATH."pages.xml";
+		if (file_exists($file)){
+			// load the xml file and setup the array. 
+			// debugLog(__FUNCTION__.": load pages.xml");
+			$thisfile = file_get_contents($file);
+			$data = simplexml_load_string($thisfile);
+			$pages = $data->item;
+			  foreach ($pages as $page) {
+			    $key=$page->url;
+			    $pagesArray[(string)$key]=array();
+			    foreach ($page->children() as $opt=>$val) {
+			        $pagesArray[(string)$key][(string)$opt]=(string)$val;
+			    }
+			  }
+		}
+		else {
+			// no page cache, regen and then load it
+			// debugLog(__FUNCTION__.": pages.xml not exist");			
+   		 	if(create_pagesxml(true)) getPagesXmlValues(false);
+   		 	return;
+  		}
+  	}
+
+  	// if checking cache sync, regen cache if pages differ.
+	if ($chkcount==true){
+		$path = GSDATAPAGESPATH;
+		$dir_handle = @opendir($path) or die("getPageXmlValues: Unable to open $path");
+		$filenames = array();
+		while ($filename = readdir($dir_handle)) {
+			$ext = substr($filename, strrpos($filename, '.') + 1);
+			if ($ext=="xml"){
+		  		$filenames[] = $filename;
+			}
+		}
+		if (count($pagesArray)!=count($filenames)) {
+			// debugLog(__FUNCTION__.": count differs regen pages.xml");
+			if(create_pagesxml(true)) getPagesXmlValues(false);
+		}
+	}
   
 }
 
@@ -231,12 +253,17 @@ function getPagesXmlValues($chkcount=true){
 function create_pagesxml($flag){
 global $pagesArray;
 
-if ((isset($_GET['upd']) && $_GET['upd']=="edit-success") || $flag=='true'){
+$success = '';
+
+// debugLog("create_pagesxml: " . $flag);
+if ((isset($_GET['upd']) && $_GET['upd']=="edit-success") || $flag===true || $flag=='true'){
+  $pagesArray = array();
+  // debugLog("create_pagesxml proceeding");
   $menu = '';
   $filem=GSDATAOTHERPATH."pages.xml";
 
   $path = GSDATAPAGESPATH;
-  $dir_handle = @opendir($path) or die("Unable to open $path");
+  $dir_handle = @opendir($path) or die("create_pagesxml: Unable to open $path");
   $filenames = array();
   while ($filename = readdir($dir_handle)) {
     $ext = substr($filename, strrpos($filename, '.') + 1);
@@ -246,7 +273,7 @@ if ((isset($_GET['upd']) && $_GET['upd']=="edit-success") || $flag=='true'){
   }
   
   $count=0;
-  $xml = @new SimpleXMLExtended('<channel></channel>');
+  $xml = new SimpleXMLExtended('<?xml version="1.0" encoding="UTF-8"?><channel></channel>');  
   if (count($filenames) != 0) {
     foreach ($filenames as $file) {
       if ($file == "." || $file == ".." || is_dir(GSDATAPAGESPATH.$file) || $file == ".htaccess"  ) {
@@ -254,12 +281,19 @@ if ((isset($_GET['upd']) && $_GET['upd']=="edit-success") || $flag=='true'){
       } else {
         $thisfile = file_get_contents($path.$file);
         $data = simplexml_load_string($thisfile);
+        
+        if(!$data){
+        	// handle corrupt page xml
+        	debugLog("page $file is corrupt");
+        	continue;
+        }
+        
         $count++;   
         $id=$data->url;
         
     	$pages = $xml->addChild('item');
-        $pages->addChild('url', $id);
-        $pagesArray[(string)$id]['url']=(string)$id;            
+        // $pages->addChild('url', $id);
+        // $pagesArray[(string)$id]['url']=(string)$id;            
                 
         foreach ($data->children() as $item => $itemdata) {
                 if ($item!="content"){
@@ -271,20 +305,27 @@ if ((isset($_GET['upd']) && $_GET['upd']=="edit-success") || $flag=='true'){
                 
         $note = $pages->addChild('slug');
         $note->addCData($id);
-        $pagesArray[(string)$id]['slug']=(string)$data->slug;
+        $pagesArray[(string)$id]['slug']=(string)$id;
                 
         $pagesArray[(string)$id]['filename']=$file;
         $note = $pages->addChild('filename'); 
         $note->addCData($file);
-		
-        // Plugin Authors should add custome fields etc.. here
-  		exec_action('caching-save');
-	  
+			  
       } // else
     } // end foreach
   }   // endif      
-  if ($flag==true){
-    $xml->asXML($filem);
+  if ($flag===true || $flag == 'true'){
+
+  	// Plugin Authors should add custom fields etc.. here
+  	$xml = exec_filter('pagecache',$xml);
+
+    // sanity check in case the filter does not come back properly or returns null
+    if($xml){ 
+    	$success = XMLsave($xml,$filem);
+  	}	
+  	// debugLog("create_pagesxml saved: ". $success);
+  	exec_action('pagecache-aftersave');
+  	return $success;
   }
 }
 }

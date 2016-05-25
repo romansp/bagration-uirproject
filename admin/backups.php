@@ -48,7 +48,7 @@ if (isset($_GET['deleteall'])){
 //display all page backups
 $filenames = getFiles($path);
 $count="0";
-$pagesArray = array();
+$pagesArray_tmp = array();
 $pagesSorted=array(); 
 
 if (count($filenames) != 0) 
@@ -59,13 +59,13 @@ if (count($filenames) != 0)
 		{
 			$data = getXML($path .$file);
 			$status = $data->menuStatus;
-			$pagesArray[$count]['title'] = html_entity_decode($data->title, ENT_QUOTES, 'UTF-8');
-			$pagesArray[$count]['url'] = $data->url;
-			$pagesArray[$count]['date'] = $data->pubDate;
+			$pagesArray_tmp[$count]['title'] = html_entity_decode($data->title, ENT_QUOTES, 'UTF-8');
+			$pagesArray_tmp[$count]['url'] = $data->url;
+			$pagesArray_tmp[$count]['date'] = $data->pubDate;
 			$count++;
 		}
 	}
-	$pagesSorted = subval_sort($pagesArray,'title');
+	$pagesSorted = subval_sort($pagesArray_tmp,'title');
 }
 
 if (count($pagesSorted) != 0) 
@@ -77,12 +77,12 @@ if (count($pagesSorted) != 0)
 		
 		if ($page['title'] == '' ) { $page['title'] = '[No Title] &nbsp;&raquo;&nbsp; <em>'. $page['url'] .'</em>'; }
 		
-		$table .= '<td class="pagetitle"><a title="'.i18n_r('VIEWPAGE_TITLE').' '. cl($page['title']) .'" href="backup-edit.php?p=view&amp;id='. $page['url'] .'">'. cl($page['title']) .'</a></td>';
+		$table .= '<td class="pagetitle"><a title="'.i18n_r('VIEWPAGE_TITLE').' '. var_out($page['title']) .'" href="backup-edit.php?p=view&amp;id='. $page['url'] .'">'. cl($page['title']) .'</a></td>';
 		$table .= '<td style="width:80px;text-align:right;" ><span>'. shtDate($page['date']) .'</span></td>';
-		$table .= '<td class="delete" ><a class="delconfirm" title="'.i18n_r('DELETEPAGE_TITLE').' '. cl($page['title']) .'?" href="backup-edit.php?p=delete&amp;id='. $page['url'] .'&amp;nonce='.get_nonce("delete", "backup-edit.php").'">&times;</a></td>';
+		$table .= '<td class="delete" ><a class="delconfirm" title="'.i18n_r('DELETEPAGE_TITLE').' '. var_out($page['title']) .'?" href="backup-edit.php?p=delete&amp;id='. $page['url'] .'&amp;nonce='.get_nonce("delete", "backup-edit.php").'">&times;</a></td>';
 		$table .= '</tr>';
 	}
-}	
+}
 
 get_template('header', cl($SITENAME).' &raquo; '.i18n_r('BAK_MANAGEMENT')); 
 

@@ -16,13 +16,14 @@ include('inc/common.php');
 // Variable Settings
 login_cookie_check();
 
-$log_name = strippath($_GET['log']);
+$log_name = var_out(isset($_GET['log']) ? $_GET['log'] : '');
 $log_path = GSDATAOTHERPATH.'logs/';
 $log_file = $log_path . $log_name;
 
-if (!is_file($log_file)) {
-	$log_data = false;
-}
+$whois_url = 'http://whois.arin.net/rest/ip/';
+
+// filepath_is_safe returns false if file does nt exist
+if(!isset($log_name) || !filepath_is_safe($log_file,$log_path)) $log_data = false;
 
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && strlen($log_name)>0) {
 	// check for csrf
@@ -80,9 +81,9 @@ get_template('header', cl($SITENAME).' &raquo; '.i18n_r('SUPPORT').' &raquo; '.i
 						  //check if its an ip address
 						  if (do_reg($d, $ip_regex)) {
 							if ($d == $_SERVER['REMOTE_ADDR']) {
-								$d = i18n_r('THIS_COMPUTER').' (<a href="http://ws.arin.net/whois/?queryinput='. $d.'" target="_blank" >'.$d.'</a>)';
+								$d = i18n_r('THIS_COMPUTER').' (<a href="'. $whois_url . $d.'" target="_blank" >'.$d.'</a>)';
 							} else {
-								$d = '<a href="http://ws.arin.net/whois/?queryinput='. $d.'" target="_blank" >'.$d.'</a>';
+								$d = '<a href="'. $whois_url . $d.'" target="_blank" >'.$d.'</a>';
 							}
 						  }
 						  

@@ -26,6 +26,7 @@ function get_page_content() {
 	exec_action('content-top');
 	$content = strip_decode($content);
 	$content = exec_filter('content',$content);
+	if(getDef('GSCONTENTSTRIP',true)) $content = strip_content($content);
 	echo $content;
 	exec_action('content-bottom');
 }
@@ -39,27 +40,19 @@ function get_page_content() {
  * @uses strip_decode
  *
  * @param string $n Optional, default is 200.
- * @param bool $html Optional, default is false.  
- * 				If this is true, it will strip out html from $content
+ * @param bool $striphtml Optional, default false, true will strip html from $content
+ * @param string $ellipsis Optional, Default '...', specify an ellipsis
  * @return string Echos.
  */
-function get_page_excerpt($n=200, $html=false) {
-	global $content;
+function get_page_excerpt($len=200, $striphtml=true, $ellipsis = '...') {
+	GLOBAL $content;
+	if ($len<1) return '';
 	$content_e = strip_decode($content);
 	$content_e = exec_filter('content',$content_e);
-	
-	if (!$html) {
-		$content_e = strip_tags($content_e);
-	}
-	
-	if (function_exists('mb_substr')) { 
-		$content_e = trim(mb_substr($content_e, 0, $n)) . '...';
-	} else {
-		$content_e = trim(substr($content_e, 0, $n)) . '...';
-	}
-
-	echo $content_e;
+	if(getDef('GSCONTENTSTRIP',true)) $content_e = strip_content($content_e);	
+	echo getExcerpt($content_e, $len, $striphtml, $ellipsis);
 }
+
 
 /**
  * Get Page Meta Keywords
@@ -95,7 +88,6 @@ function get_page_meta_keywords($echo=true) {
 function get_page_meta_desc($echo=true) {
 	global $metad;
 	$myVar = encode_quotes(strip_decode($metad));
-	
 	if ($echo) {
 		echo $myVar;
 	} else {
@@ -274,33 +266,35 @@ function get_header($full=true) {
 	global $content;
 	include(GSADMININCPATH.'configuration.php');
 	
-	if (function_exists('mb_substr')) { 
-		$description = trim(mb_substr(strip_tags(strip_decode($content)), 0, 160));
-	} else {
-		$description = trim(substr(strip_tags(strip_decode($content)), 0, 160));
-	}
-	
+	// meta description	
 	if ($metad != '') {
-		$description = get_page_meta_desc(FALSE);
-	} else {
-		$description = str_replace('"','', $description);
-		$description = str_replace("'",'', $description);
-		$description = preg_replace('/\n/', " ", $description);
-		$description = preg_replace('/\r/', " ", $description);
-		$description = preg_replace('/\t/', " ", $description);
-		$description = preg_replace('/ +/', " ", $description);
+		$desc = get_page_meta_desc(FALSE);
 	}
-	
+	else if(getDef('GSAUTOMETAD',true))
+	{
+		// use content excerpt, NOT filtered
+		$desc = strip_decode($content);
+		if(getDef('GSCONTENTSTRIP',true)) $desc = strip_content($desc);
+		$desc = cleanHtml($desc,array('style','script')); // remove unwanted elements that strip_tags fails to remove
+		$desc = getExcerpt($desc,160); // grab 160 chars
+		$desc = strip_whitespace($desc); // remove newlines, tab chars
+		$desc = encode_quotes($desc);
+		$desc = trim($desc);
+	}
+
+	if(!empty($desc)) echo '<meta name="description" content="'.$desc.'" />'."\n";
+
+	// meta keywords
 	$keywords = get_page_meta_keywords(FALSE);
-	
-	echo '<meta name="description" content="'.$description.'" />'."\n";
 	if ($keywords != '') echo '<meta name="keywords" content="'.$keywords.'" />'."\n";
 	
 	if ($full) {
-		echo '<meta name="generator" content="'. $site_full_name .'" />'."\n";
 		echo '<link rel="canonical" href="'. get_page_url(true) .'" />'."\n";
 	}
+
+	// script queue
 	get_scripts_frontend();
+	
 	exec_action('theme-header');
 }
 
@@ -380,7 +374,7 @@ function get_theme_url($echo=true) {
  */
 function get_site_name($echo=true) {
 	global $SITENAME;
-	$myVar = trim(stripslashes($SITENAME));
+	$myVar = cl($SITENAME);
 	
 	if ($echo) {
 		echo $myVar;
@@ -454,38 +448,8 @@ function get_site_credits($text ='Powered by ') {
  */
 function menu_data($id = null,$xml=false) {
     $menu_extract = '';
-    
-    $path = GSDATAPAGESPATH;
-    $dir_handle = opendir($path) or die("Unable to open $path");
-    $filenames = array();
-    while ($filename = readdir($dir_handle)) {
-        $filenames[] = $filename;
-    }
-    closedir($dir_handle);
-    
-    $count="0";
-    $pagesArray = array();
-    if (count($filenames) != 0) {
-        foreach ($filenames as $file) {
-            if ($file == "." || $file == ".." || is_dir($path . $file) || $file == ".htaccess"  ) {
-                // not a page data file
-            } else {
-								$data = getXML($path . $file);
-                if ($data->private != 'Y') {
-                    $pagesArray[$count]['menuStatus'] = $data->menuStatus;
-                    $pagesArray[$count]['menuOrder'] = $data->menuOrder;
-                    $pagesArray[$count]['menu'] = $data->menu;
-                    $pagesArray[$count]['parent'] = $data->parent;
-                    $pagesArray[$count]['title'] = $data->title;
-                    $pagesArray[$count]['url'] = $data->url;
-                    $pagesArray[$count]['private'] = $data->private;
-                    $pagesArray[$count]['pubDate'] = $data->pubDate;
-                    $count++;
-                }
-            }
-        }
-    }
-    
+
+    global $pagesArray; 
     $pagesSorted = subval_sort($pagesArray,'menuOrder');
     if (count($pagesSorted) != 0) { 
       $count = 0;
@@ -561,6 +525,11 @@ function menu_data($id = null,$xml=false) {
  */
 function get_component($id) {
     global $components;
+
+    // normalize id
+    $id = to7bit($id, 'UTF-8');
+	$id = clean_url($id);
+
     if (!$components) {
          if (file_exists(GSDATAOTHERPATH.'components.xml')) {
             $data = getXML(GSDATAOTHERPATH.'components.xml');
@@ -593,9 +562,10 @@ function get_component($id) {
  * @uses exec_filter 
  *
  * @param string $currentpage This is the ID of the current page the visitor is on
+ * @param string $classPrefix Prefix that gets added to the parent and slug classnames
  * @return string 
  */	
-function get_navigation($currentpage) {
+function get_navigation($currentpage,$classPrefix = "") {
 
 	$menu = '';
 
@@ -608,7 +578,9 @@ function get_navigation($currentpage) {
 			$url_nav = $page['url'];
 			
 			if ($page['menuStatus'] == 'Y') { 
-				if ("$currentpage" == "$url_nav") { $classes = "current ". $page['parent'] ." ". $url_nav; } else { $classes = trim($page['parent'] ." ". $url_nav); }
+				$parentClass = !empty($page['parent']) ? $classPrefix.$page['parent'] . " " : "";
+				$classes = trim( $parentClass.$classPrefix.$url_nav);
+				if ("$currentpage" == "$url_nav") $classes .= " current active";
 				if ($page['menu'] == '') { $page['menu'] = $page['title']; }
 				if ($page['title'] == '') { $page['title'] = $page['menu']; }
 				$menu .= '<li class="'. $classes .'"><a href="'. find_url($page['url'],$page['parent']) . '" title="'. encode_quotes(cl($page['title'])) .'">'.strip_decode($page['menu']).'</a></li>'."\n";
